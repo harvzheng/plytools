@@ -1,0 +1,5 @@
+# Internal brainstorming artifacts — kept locally, never shipped.
+# Task 1 of the implementation plan will replace this file with the full
+# .gitignore; the lines below must persist.
+docs/superpowers/
+.DS_Store
