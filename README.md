@@ -29,18 +29,22 @@ contains only tool code, templates, and example schemas.
    uv sync --extra dev
    ```
 
-3. Copy `.env.example` to `.env` and fill in API keys you have:
+3. Run the interactive setup to configure API keys:
 
    ```bash
-   cp .env.example .env
-   # edit .env
+   uv run scripts/setup.py
    ```
 
-   - Apollo: https://developer.apollo.io/ (paid tier for API)
-   - Hunter: https://hunter.io/api (free tier available)
+   You'll be prompted for each provider. Press Enter to skip either.
+   After saving, setup hits each provider's free usage endpoint to confirm
+   the keys actually work (no credits burned).
+
+   - Apollo: https://www.apollo.io/pricing (API requires a paid plan)
+   - Hunter: https://hunter.io/api (free tier includes API access)
 
    Both are optional. The skill falls through the cascade and lands on manual
-   instructions if no keys are set.
+   instructions if no keys are set. You can also skip the script and hand-edit
+   `.env` (copy from `.env.example`).
 
 4. In Claude Code, open this repo as the project. On first run, the skill
    will interview you and write `profile.md`, `positioning.md`, and
