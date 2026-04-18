@@ -5,7 +5,7 @@
 #     "httpx>=0.27",
 # ]
 # ///
-"""hunter_lookup.py — Hunter.io email-finder, domain-pattern, and account."""
+"""hunter_lookup.py — Hunter.io email-finder and account usage."""
 from __future__ import annotations
 
 import argparse
@@ -17,7 +17,6 @@ from typing import Any
 import httpx
 
 HUNTER_FIND = "https://api.hunter.io/v2/email-finder"
-HUNTER_DOMAIN = "https://api.hunter.io/v2/domain-search"
 HUNTER_ACCOUNT = "https://api.hunter.io/v2/account"
 
 
@@ -58,19 +57,6 @@ def lookup_email(
             client.close()
 
 
-def find_pattern(domain: str, api_key: str, client: httpx.Client | None = None) -> str | None:
-    owns = client is None
-    client = client or httpx.Client(timeout=15.0)
-    try:
-        r = client.get(HUNTER_DOMAIN, params={"domain": domain, "api_key": api_key})
-        _raise_on_quota(r)
-        data = (r.json().get("data") or {})
-        return data.get("pattern")
-    finally:
-        if owns:
-            client.close()
-
-
 def check_credits(api_key: str, client: httpx.Client | None = None) -> int:
     owns = client is None
     client = client or httpx.Client(timeout=10.0)
@@ -92,8 +78,6 @@ def main(argv: list[str]) -> int:
     p_lookup.add_argument("first")
     p_lookup.add_argument("last")
     p_lookup.add_argument("domain")
-    p_pattern = sub.add_parser("pattern")
-    p_pattern.add_argument("domain")
     sub.add_parser("credits")
 
     args = parser.parse_args(argv)
@@ -104,8 +88,6 @@ def main(argv: list[str]) -> int:
     try:
         if args.cmd == "lookup":
             result = lookup_email(args.first, args.last, args.domain, api_key=api_key)
-        elif args.cmd == "pattern":
-            result = {"pattern": find_pattern(args.domain, api_key=api_key), "source": "hunter"}
         elif args.cmd == "credits":
             result = {"credits_remaining": check_credits(api_key=api_key), "source": "hunter"}
     except RuntimeError as e:

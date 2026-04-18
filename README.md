@@ -2,8 +2,9 @@
 
 A Claude Code skill + helper scripts for running job-application outreach
 end-to-end: JD ingest → LinkedIn contact tiering → email discovery (Apollo →
-Hunter → pattern-guess → manual) → persona-tuned draft generation → pipeline
-logging.
+Hunter → manual fallback) → persona-tuned draft generation → pipeline
+logging. If neither Apollo nor Hunter returns a verified hit, the skill
+surfaces a manual lookup block rather than guessing an address.
 
 ## How it works
 

@@ -1,6 +1,6 @@
 ---
 name: job-apply
-description: End-to-end job-application outreach. Use when the user pastes a JD URL, mentions applying to a company, asks for outreach drafts, or says things like "help me reach out to [company]", "draft an email to the hiring manager at [company]", or "apply to this role". Orchestrates six stages — profile intake, JD ingest, LinkedIn contact filtering, HITL target selection, email discovery via Apollo/Hunter/pattern-guess, persona-tuned draft generation, and pipeline logging — with user data isolated in auto-memory and tool code in this repo.
+description: End-to-end job-application outreach. Use when the user pastes a JD URL, mentions applying to a company, asks for outreach drafts, or says things like "help me reach out to [company]", "draft an email to the hiring manager at [company]", or "apply to this role". Orchestrates six stages — profile intake, JD ingest, LinkedIn contact filtering, HITL target selection, email discovery via Apollo/Hunter (falling back to manual when neither finds a verified hit), persona-tuned draft generation, and pipeline logging — with user data isolated in auto-memory and tool code in this repo.
 ---
 
 # Job-Apply Skill
@@ -98,15 +98,15 @@ For each selected target, run the cascade:
    - On 402/429/out-of-credits error, skip to Hunter.
 2. **Hunter** — `uv run scripts/hunter_lookup.py lookup <first> <last> <domain>`.
    - Same credit-floor check against `hunter_lookup.py credits`.
-   - On quota/error, skip to pattern-guess.
-3. **Pattern-guess** — `uv run scripts/hunter_lookup.py pattern <domain>` to
-   get the dominant pattern, then `uv run scripts/email_fallback.py <first>
-   <last> <domain> <pattern>`. Flag as `confidence: guessed`.
-4. **Manual** — print a copy-paste block:
+   - On quota/error or miss, skip to manual.
+3. **Manual** — print a copy-paste block:
    - Apollo web UI search link: `https://app.apollo.io/#/people?qKeywords=<name>&qOrganizationName=<company>`
    - Hunter web UI: `https://hunter.io/search/<domain>`
    - LinkedIn Sales Nav hint
-   - Common patterns to try ({first}, {first}.{last}, {f}{last})
+
+Only verified hits from Apollo or Hunter are recorded as usable emails. If both
+providers miss, surface the manual block and do NOT fabricate an address —
+guessing is explicitly out of scope.
 
 After each lookup, increment the session credit counter by 1 and append a row to
 `applications/<company>/contacts.md`:
@@ -141,8 +141,8 @@ For each selected target:
 ## Credit-budget enforcement (critical)
 
 Maintain an in-conversation counter `credits_used_this_session` starting at 0.
-Increment by 1 per successful Apollo or Hunter lookup call (not pattern-guess,
-not manual). Before every lookup:
+Increment by 1 per successful Apollo or Hunter lookup call (manual output is
+free). Before every lookup:
 
 - If `credits_used_this_session >= 10`: **stop**, show the counter, ask the
   user whether to continue. Only proceed on explicit approval.
@@ -151,7 +151,7 @@ not manual). Before every lookup:
 
 Read `.env` at the repo root (if present). Expected:
 - `APOLLO_API_KEY` — required for Apollo cascade step
-- `HUNTER_API_KEY` — required for Hunter + pattern-guess steps
+- `HUNTER_API_KEY` — required for Hunter cascade step
 
 Both are optional; the skill falls through the cascade and eventually lands on
 manual output if neither is set.
@@ -170,4 +170,6 @@ manual output if neither is set.
   or `.env` to the repo.
 - Never claim an email is verified unless the script returned
   `confidence: "verified"` or equivalent.
+- Never guess or fabricate an email address. If Apollo and Hunter both miss,
+  surface the manual lookup block instead.
 - Never exceed the 10-credit session cap without explicit user approval.

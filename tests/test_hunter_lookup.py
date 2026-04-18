@@ -3,11 +3,10 @@ from __future__ import annotations
 import httpx
 import respx
 
-from hunter_lookup import check_credits, find_pattern, lookup_email
+from hunter_lookup import check_credits, lookup_email
 
 
 HUNTER_FIND = "https://api.hunter.io/v2/email-finder"
-HUNTER_DOMAIN = "https://api.hunter.io/v2/domain-search"
 HUNTER_ACCOUNT = "https://api.hunter.io/v2/account"
 
 
@@ -38,15 +37,6 @@ def test_lookup_email_quota_exceeded():
         assert "429" in str(e) or "rate" in str(e).lower() or "quota" in str(e).lower()
     else:
         raise AssertionError("expected RuntimeError")
-
-
-@respx.mock
-def test_find_pattern_returns_dominant():
-    respx.get(HUNTER_DOMAIN).mock(return_value=httpx.Response(200, json={
-        "data": {"pattern": "{first}", "organization": "Example Corp"}
-    }))
-    pattern = find_pattern("example.com", api_key="k")
-    assert pattern == "{first}"
 
 
 @respx.mock
