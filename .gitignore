@@ -1,5 +1,37 @@
-# Internal brainstorming artifacts — kept locally, never shipped.
-# Task 1 of the implementation plan will replace this file with the full
-# .gitignore; the lines below must persist.
+# Secrets
+.env
+.env.local
+.env.*.local
+
+# User data — must NEVER be committed
+data/
+applications/
+memory/
+profile.md
+positioning.md
+contacts.md
+
+# Personal documents
+*.pdf
+*.docx
+!tests/fixtures/*.pdf
+
+# Internal brainstorming artifacts — kept locally, never shipped
 docs/superpowers/
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+.uv/
+dist/
+build/
+*.egg-info/
+
+# OS / editors
 .DS_Store
+.idea/
+.vscode/
+*.swp
