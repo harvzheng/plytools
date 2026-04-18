@@ -8,7 +8,7 @@ surfaces a manual lookup block rather than guessing an address.
 
 ## How it works
 
-The skill at `skills/job-apply/` orchestrates a six-stage workflow. Judgment
+The skill at `.claude/skills/job-apply/` orchestrates a six-stage workflow. Judgment
 work (tiering contacts, picking personas, composing drafts) happens in the
 model; deterministic work (HTTP, parsing, logging) is done by Python scripts
 under `scripts/`.
