@@ -13,7 +13,7 @@ from __future__ import annotations
 import argparse
 import pathlib
 import sys
-from dataclasses import asdict, dataclass, fields
+from dataclasses import dataclass, fields
 
 HEADERS = ["Company", "Role", "Stage", "Last action", "Next", "Updated"]
 
