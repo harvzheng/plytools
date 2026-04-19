@@ -41,13 +41,14 @@ Report: "Ingested N companies (X CSV + Y article candidates, deduped)."
 ### Stage C — Resolve careers URLs
 
 For each remaining company:
-1. `uv run scripts/resolve_careers.py "<name>" --cache <user-data>/applications/_careers_cache.csv [--linkedin <url>]`
-2. If the script returns `source: "needs_google_or_manual"`:
+1. `uv run scripts/resolve_careers.py "<name>" --cache <user-data>/applications/_careers_cache.csv`
+2. If the script returns `source: "unresolved"` with `careers_url: null`, that's a cached negative from a prior run — skip Stage D for this company and surface it in the Stage F unresolved block. Don't re-probe or re-Google.
+3. If the script returns `source: "needs_google_or_manual"`:
    - Count it against the session budget (**cap 25 WebSearches per run**).
    - If over budget: skip Google step; this company will surface in the unresolved-block at the end.
    - Otherwise: `WebSearch("<company> careers")`. Pick the first result whose domain is not `linkedin.com`, not `indeed.com`, `glassdoor.com`, `wellfound.com`, or other aggregators. Fetch it via `uv run scripts/fetch_jd.py <url>` (reused as a generic page fetcher); LLM-sniff: does this page look like a careers page with role listings?
-   - On YES: record via `uv run scripts/resolve_careers.py --record "<name>" "<url>" generic google --cache <...>` and continue.
-   - On NO (or second-choice failure): record as `unresolved` so the skill doesn't re-probe next run — `uv run scripts/resolve_careers.py --record "<name>" "" "" unresolved --cache <...>`.
+   - On YES: record via `uv run scripts/resolve_careers.py --cache <...> --record "<name>" "<url>" generic google` and continue.
+   - On NO (or second-choice failure): record as `unresolved` so the skill doesn't re-probe next run — `uv run scripts/resolve_careers.py --cache <...> --record "<name>" "" "" unresolved`.
 
 Report: "N resolved / M unresolved." Keep the unresolved list for Stage F.
 

@@ -6,8 +6,8 @@
 """resolve_careers.py — company name → careers URL, with persistent CSV cache.
 
 Usage:
-  uv run scripts/resolve_careers.py <company> [--linkedin <url>] [--cache <path>]
-  uv run scripts/resolve_careers.py --record <company> <careers_url> <ats> <source> [--cache <path>]
+  uv run scripts/resolve_careers.py <company> [--cache <path>]
+  uv run scripts/resolve_careers.py --cache <path> --record <company> <careers_url> <ats> <source>
 
 Emits JSON on stdout.
 """
@@ -86,7 +86,6 @@ def write_cache_row(path: pathlib.Path, row: CacheRow) -> None:
 def resolve(
     company: str,
     *,
-    linkedin_url: str | None = None,
     cache_path: pathlib.Path | None = None,
     client: httpx.Client | None = None,
 ) -> dict:
@@ -138,7 +137,6 @@ def resolve(
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--cache", type=pathlib.Path, default=None)
-    parser.add_argument("--linkedin", default=None)
     parser.add_argument("--record", action="store_true")
     parser.add_argument("args", nargs="+")
 
@@ -164,7 +162,7 @@ def main(argv: list[str]) -> int:
         print(json.dumps(asdict(row)))
         return 0
     company = ns.args[0]
-    result = resolve(company, linkedin_url=ns.linkedin, cache_path=ns.cache)
+    result = resolve(company, cache_path=ns.cache)
     print(json.dumps(result))
     return 0
 
