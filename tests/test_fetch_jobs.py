@@ -69,3 +69,27 @@ def test_fetch_lever_snippet_is_truncated():
     jobs = fetch_lever("https://jobs.lever.co/plaid")
     for j in jobs:
         assert len(j["snippet"]) <= 400
+
+
+@respx.mock
+def test_fetch_ashby_parses_job_board():
+    payload = json.loads((FIXTURES / "ashby_board.json").read_text())
+    respx.get("https://api.ashbyhq.com/posting-api/job-board/linear").mock(
+        return_value=httpx.Response(200, json=payload)
+    )
+    jobs = fetch_ashby("https://jobs.ashbyhq.com/linear")
+    assert len(jobs) > 0
+    for j in jobs:
+        assert set(j.keys()) >= {"title", "location", "url", "snippet"}
+        assert j["title"]
+
+
+@respx.mock
+def test_fetch_ashby_snippet_is_truncated():
+    payload = json.loads((FIXTURES / "ashby_board.json").read_text())
+    respx.get("https://api.ashbyhq.com/posting-api/job-board/linear").mock(
+        return_value=httpx.Response(200, json=payload)
+    )
+    jobs = fetch_ashby("https://jobs.ashbyhq.com/linear")
+    for j in jobs:
+        assert len(j["snippet"]) <= 400

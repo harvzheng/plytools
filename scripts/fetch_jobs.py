@@ -89,7 +89,27 @@ def fetch_lever(careers_url: str, *, client: httpx.Client | None = None) -> list
 
 
 def fetch_ashby(careers_url: str, *, client: httpx.Client | None = None) -> list[dict]:
-    raise NotImplementedError  # Task 13
+    slug = _slug_from_careers_url(careers_url)
+    api = f"https://api.ashbyhq.com/posting-api/job-board/{slug}"
+    owns_client = client is None
+    if owns_client:
+        client = httpx.Client(timeout=20.0, follow_redirects=True)
+    try:
+        r = client.get(api, params={"includeCompensation": "false"})
+        r.raise_for_status()
+        data = r.json()
+    finally:
+        if owns_client:
+            client.close()
+    out: list[dict] = []
+    for j in data.get("jobs", []):
+        out.append({
+            "title": j.get("title") or "",
+            "location": j.get("locationName") or j.get("location") or "",
+            "url": j.get("jobUrl") or j.get("applyUrl") or "",
+            "snippet": _trim(_strip_html(j.get("descriptionHtml") or j.get("description") or "")),
+        })
+    return out
 
 
 def fetch_generic(careers_url: str, *, client: httpx.Client | None = None) -> list[dict]:
