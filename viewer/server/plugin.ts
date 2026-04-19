@@ -29,13 +29,24 @@ function resolveMemoryDir(explicit?: string): string {
 
 export function plytoolsViewer(opts: PluginOptions = {}): Plugin {
   const memoryDir = resolveMemoryDir(opts.memoryDir);
+  let currentWatcher: ReturnType<typeof createWatcher> | null = null;
 
   return {
     name: "plytools-viewer",
-    configureServer(server: ViteDevServer) {
+    async configureServer(server: ViteDevServer) {
+      // Vite may re-invoke configureServer on restart. Stop the prior watcher
+      // so we don't leak chokidar instances across config reloads.
+      if (currentWatcher) {
+        await currentWatcher.stop();
+        currentWatcher = null;
+      }
+
       const watcher = createWatcher(memoryDir);
+      currentWatcher = watcher;
       const api = createApi({ memoryDir, watcher });
 
+      // Register pre-middleware so /api/* is handled before Vite's
+      // HTML/SPA-fallback stack.
       server.middlewares.use((req, res, next) => {
         const url = req.url || "";
         if (url.startsWith("/api/")) {
@@ -46,7 +57,9 @@ export function plytoolsViewer(opts: PluginOptions = {}): Plugin {
       });
 
       server.httpServer?.once("close", () => {
-        void watcher.stop();
+        const w = currentWatcher;
+        currentWatcher = null;
+        void w?.stop();
       });
 
       console.log(`[plytools-viewer] memory dir: ${memoryDir}`);
