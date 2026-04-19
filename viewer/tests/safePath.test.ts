@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, realpathSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, realpathSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { isInside } from "../server/safePath";
@@ -32,4 +32,13 @@ describe("isInside", () => {
   it("rejects a path that does not exist", () => {
     expect(isInside(root, join(root, "does/not/exist"))).toBe(false);
   });
+
+  it.skipIf(process.platform === "win32")(
+    "rejects a symlink inside root that escapes to outside root",
+    () => {
+      const evil = join(root, "escape");
+      symlinkSync("/etc/passwd", evil);
+      expect(isInside(root, evil)).toBe(false);
+    }
+  );
 });
