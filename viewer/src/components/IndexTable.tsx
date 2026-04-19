@@ -21,7 +21,7 @@ import {
 } from "./ui/dropdown-menu";
 import { Button } from "./ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
-import { StageBadge } from "./StageBadge";
+import { StageBadge, bucketStage } from "./StageBadge";
 import { ChevronDown, ArrowUpDown } from "lucide-react";
 
 function truncate(s: string, n = 60) {
@@ -55,10 +55,12 @@ export function IndexTable({
   const [globalFilter, setGlobalFilter] = useState("");
   const [stageFilter, setStageFilter] = useState<string[]>([]);
 
-  const stages = useMemo(
-    () => Array.from(new Set(rows.map((r) => r.stage))).sort(),
-    [rows]
-  );
+  const stages = useMemo(() => {
+    const buckets = new Set(rows.map((r) => bucketStage(r.stage)));
+    // Display in canonical order so the dropdown isn't alphabetical
+    const order = ["Folder only", "Discovered", "In progress", "Drafts ready", "Sent", "Replied"];
+    return order.filter((b) => buckets.has(b));
+  }, [rows]);
 
   const slugCounts = useMemo(() => {
     const m = new Map<string, number>();
@@ -91,8 +93,10 @@ export function IndexTable({
       accessorKey: "stage",
       header: "Stage",
       cell: ({ getValue }) => <StageBadge stage={String(getValue())} />,
-      filterFn: (row, id, value: string[]) =>
-        value.length === 0 || value.includes(row.getValue(id) as string),
+      filterFn: (row, id, value: string[]) => {
+        if (value.length === 0) return true;
+        return value.includes(bucketStage(row.getValue(id) as string));
+      },
     },
     {
       id: "lastAction",
