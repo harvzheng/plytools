@@ -76,6 +76,8 @@ def fetch_lever(careers_url: str, *, client: httpx.Client | None = None) -> list
             client.close()
     out: list[dict] = []
     # Lever returns a flat list of postings.
+    if not isinstance(data, list):
+        return out
     for p in data:
         categories = p.get("categories") or {}
         description_text = _strip_html(p.get("descriptionPlain") or p.get("description") or "")
@@ -164,6 +166,7 @@ def main(argv: list[str]) -> int:
     try:
         jobs = DISPATCH[args.ats](args.url)
     except NotImplementedError:
+        # Guard for future ATS dispatchers added as stubs.
         print(json.dumps({"error": f"ATS '{args.ats}' not yet implemented"}))
         return 1
     except httpx.HTTPError as e:

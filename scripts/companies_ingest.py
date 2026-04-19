@@ -55,16 +55,15 @@ def extract_article_candidates(url: str, *, client: httpx.Client | None = None) 
     The skill does the LLM-verified filtering afterward — this pass is deliberately
     permissive.
     """
-    close = False
-    if client is None:
+    owns_client = client is None
+    if owns_client:
         client = httpx.Client(timeout=20.0, follow_redirects=True)
-        close = True
     try:
         r = client.get(url)
         r.raise_for_status()
         html = r.text
     finally:
-        if close:
+        if owns_client:
             client.close()
 
     soup = BeautifulSoup(html, "html.parser")
