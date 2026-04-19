@@ -10,36 +10,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { FolderOpen } from "lucide-react";
 import { DraftCard } from "./DraftCard";
 
-function OpenFolderButton({ slug: _slug }: { slug: string }) {
+function OpenFolderButton({ slug }: { slug: string }) {
+  async function openFolder() {
+    try {
+      await api.open(`applications/${slug}`);
+    } catch (e) {
+      console.error(e);
+    }
+  }
   return (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={async () => {
-        try {
-          // The folder path is resolved server-side by deriving it from the slug
-          // and the memory dir. The client just passes a relative-looking path
-          // that the server joins to memoryDir and validates via realpath.
-          // But /api/open expects an absolute path inside memoryDir, so the
-          // server can't reconstruct it without a path. We therefore store the
-          // memoryDir alongside the app payload — see /api/application. Since
-          // we don't expose memoryDir to the client, we use a sentinel: the
-          // server accepts a "slug-relative" path of the form "applications/<slug>".
-          // (See api.ts — but for safety we pass an absolute path.)
-          // Simpler: call /api/open with a path computed from one of the known
-          // file paths returned by the detail payload. Here we use the status
-          // or first draft path — but those aren't returned either. For v1
-          // we skip this button and rely on per-file Open-in-editor inside
-          // Drafts cards. The button stays for parity but does nothing unless
-          // a known file is available.
-          console.warn("Open folder not yet wired — use per-draft Open in editor.");
-        } catch (e) {
-          console.error(e);
-        }
-      }}
-      disabled
-      title="Use per-draft 'Open in editor' buttons for now"
-    >
+    <Button variant="outline" size="sm" onClick={openFolder}>
       <FolderOpen className="mr-1 h-3 w-3" />
       Open folder
     </Button>
@@ -69,7 +49,7 @@ function Markdown({ source }: { source: string }) {
   );
 }
 
-export function DetailPane({ slug, company }: { slug: string | null; company: string | null }) {
+export function DetailPane({ slug, company }: { slug: string | null; company?: string | null }) {
   const { data, isLoading, error } = useQuery({
     queryKey: ["application", slug],
     queryFn: () => api.getApplication(slug!),

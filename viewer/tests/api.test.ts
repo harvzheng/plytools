@@ -128,6 +128,14 @@ describe("POST /api/open", () => {
       .set("content-type", "application/json");
     expect(res.status).toBe(403);
   });
+
+  it("accepts a directory path inside memoryDir", async () => {
+    const res = await request(baseUrl)
+      .post("/api/open")
+      .send({ path: "applications/example-co", dryRun: true })
+      .set("content-type", "application/json");
+    expect(res.status).toBe(204);
+  });
 });
 
 describe("error handling", () => {

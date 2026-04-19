@@ -4,17 +4,15 @@ import { api } from "./lib/api";
 import { useMemoryEvents } from "./lib/useMemoryEvents";
 import { IndexTable } from "./components/IndexTable";
 import { DetailPane } from "./components/DetailPane";
+import { ConnectionIndicator } from "./components/ConnectionIndicator";
 
 export function App() {
-  useMemoryEvents();
+  const conn = useMemoryEvents();
   const [selected, setSelected] = useState<string | null>(null);
   const { data, isLoading, error } = useQuery({
     queryKey: ["index"],
     queryFn: api.getIndex,
   });
-
-  const selectedCompany =
-    data && selected ? data.find((r) => r.slug === selected)?.company ?? null : null;
 
   return (
     <div className="flex h-screen flex-col">
@@ -23,6 +21,10 @@ export function App() {
         <span className="text-sm text-muted-foreground">
           {data ? `${data.length} application${data.length === 1 ? "" : "s"}` : ""}
         </span>
+        <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
+          <ConnectionIndicator connected={conn.connected} staleFor={conn.staleFor} />
+          <span>live</span>
+        </div>
       </header>
       <div className="flex min-h-0 flex-1">
         <div className="flex-[1.2] overflow-auto border-r p-4">
@@ -33,7 +35,7 @@ export function App() {
           )}
         </div>
         <div className="flex-1 overflow-hidden">
-          <DetailPane slug={selected} company={selectedCompany} />
+          <DetailPane slug={selected} />
         </div>
       </div>
     </div>
