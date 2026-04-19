@@ -13,6 +13,9 @@ export function App() {
     queryFn: api.getIndex,
   });
 
+  const selectedCompany =
+    data && selected ? data.find((r) => r.slug === selected)?.company ?? null : null;
+
   return (
     <div className="flex h-screen flex-col">
       <header className="flex items-baseline gap-4 border-b p-4">
@@ -30,7 +33,7 @@ export function App() {
           )}
         </div>
         <div className="flex-1 overflow-hidden">
-          <DetailPane slug={selected} />
+          <DetailPane slug={selected} company={selectedCompany} />
         </div>
       </div>
     </div>

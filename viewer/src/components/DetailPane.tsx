@@ -68,7 +68,7 @@ function Markdown({ source }: { source: string }) {
   );
 }
 
-export function DetailPane({ slug }: { slug: string | null }) {
+export function DetailPane({ slug, company }: { slug: string | null; company: string | null }) {
   const { data, isLoading, error } = useQuery({
     queryKey: ["application", slug],
     queryFn: () => api.getApplication(slug!),
@@ -87,16 +87,13 @@ export function DetailPane({ slug }: { slug: string | null }) {
   if (!data) return null;
 
   const app: Application = data;
-  const company = app.status.fields["Stage"]
-    ? app.slug // status file may not carry company; fall back to slug
-    : app.slug;
   const stage = app.status.fields["Stage"] ?? "Unknown";
 
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-3 border-b p-4">
         <div className="flex-1">
-          <div className="text-sm text-muted-foreground">{company}</div>
+          <div className="text-sm text-muted-foreground">{company ?? app.slug}</div>
           <div className="flex items-center gap-2">
             <StageBadge stage={stage} />
           </div>
@@ -117,8 +114,6 @@ export function DetailPane({ slug }: { slug: string | null }) {
             ) : (
               <Markdown source={app.status.markdown} />
             )}
-            <Separator className="my-4" />
-            <Markdown source={app.status.markdown} />
           </TabsContent>
           <TabsContent value="jd">
             <FieldGrid fields={app.jd.fields} />
