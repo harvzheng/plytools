@@ -61,6 +61,16 @@ Triggering phrases (any of these work):
 The skill auto-detects which stage to enter based on what you've shared. You
 can jump in at any stage.
 
+### Discover roles across a company list
+
+If you have a CSV of companies (e.g. from Pampam) or a listicle article, ask the
+assistant to "discover roles from `<csv-path>`" or "discover roles from
+`<article-url>`". The `discover-roles` skill scans each company's careers page,
+filters for designer+engineer-hybrid roles, and presents a shortlist for you to
+approve. Approved rows drop into the job-apply pipeline at stage "Discovered".
+
+See `.claude/skills/discover-roles/SKILL.md` for the full stage flow.
+
 ## Running scripts directly
 
 Each script in `scripts/` is a standalone `uv` script:
