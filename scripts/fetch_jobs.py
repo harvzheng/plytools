@@ -16,7 +16,7 @@ import argparse
 import json
 import re
 import sys
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
 
 import httpx
 from bs4 import BeautifulSoup
@@ -113,7 +113,39 @@ def fetch_ashby(careers_url: str, *, client: httpx.Client | None = None) -> list
 
 
 def fetch_generic(careers_url: str, *, client: httpx.Client | None = None) -> list[dict]:
-    raise NotImplementedError  # Task 14
+    """Best-effort: fetch the page, collect anchors whose href looks job-ish."""
+    owns_client = client is None
+    if owns_client:
+        client = httpx.Client(timeout=20.0, follow_redirects=True)
+    try:
+        r = client.get(careers_url)
+        r.raise_for_status()
+        html = r.text
+    finally:
+        if owns_client:
+            client.close()
+    soup = BeautifulSoup(html, "html.parser")
+    job_href = re.compile(r"(/careers/|/jobs/|/positions/|/openings/)", re.I)
+    out: list[dict] = []
+    seen_urls: set[str] = set()
+    for a in soup.find_all("a", href=True):
+        href = a["href"]
+        if not job_href.search(href):
+            continue
+        full = urljoin(careers_url, href)
+        if full in seen_urls or full == careers_url:
+            continue
+        seen_urls.add(full)
+        title = a.get_text(strip=True)
+        if not title or len(title) > 120:
+            continue
+        out.append({
+            "title": title,
+            "location": "",
+            "url": full,
+            "snippet": "",
+        })
+    return out
 
 
 DISPATCH = {
