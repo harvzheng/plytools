@@ -1,9 +1,18 @@
 """Tests for pipeline.py — application index read/append/upsert/reconcile."""
 from __future__ import annotations
-import pathlib
-import pytest
 
-from pipeline import Row, append_row, read_index, render_index, upsert_row, reconcile, read_shortlist, import_shortlist
+import pathlib
+
+from pipeline import (
+    Row,
+    append_row,
+    import_shortlist,
+    read_index,
+    read_shortlist,
+    reconcile,
+    render_index,
+    upsert_row,
+)
 
 
 def test_read_index_missing_file_returns_empty(tmp_path: pathlib.Path):

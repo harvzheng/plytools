@@ -1,9 +1,9 @@
 """Tests for resume_parse.py."""
 from __future__ import annotations
+
 import httpx
 import respx
-
-from resume_parse import parse_resume_bytes, parse_resume
+from resume_parse import parse_resume, parse_resume_bytes
 
 
 def test_parse_resume_bytes_extracts_sections(sample_resume_pdf):

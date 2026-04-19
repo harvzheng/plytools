@@ -1,8 +1,9 @@
 """Tests for resolve_careers.py — careers URL resolution with cache."""
 from __future__ import annotations
+
 import pathlib
 
-from resolve_careers import CacheRow, read_cache, write_cache_row, slug_for, resolve
+from resolve_careers import CacheRow, read_cache, resolve, slug_for, write_cache_row
 
 
 def test_slug_for_lowercases_and_strips_non_alnum():

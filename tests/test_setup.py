@@ -5,14 +5,13 @@ import pathlib
 
 import httpx
 import respx
-
 from setup import (
     PROVIDERS,
+    _mask,
     load_env,
     render_env,
     save_env,
     validate,
-    _mask,
 )
 
 

@@ -115,7 +115,7 @@ def read_shortlist(path: pathlib.Path) -> list[ShortlistRow]:
 
 def _jd_stub(company: str, roles: list[ShortlistRow]) -> str:
     lines = [f"# {company} — shortlisted roles", ""]
-    lines.append(f"_Stub created by `pipeline.py import-shortlist`. Full JDs not yet fetched. Run job-apply Stage 1 on a specific role to fetch its full description._")
+    lines.append("_Stub created by `pipeline.py import-shortlist`. Full JDs not yet fetched. Run job-apply Stage 1 on a specific role to fetch its full description._")
     lines.append("")
     lines.append("| Role | Location | URL |")
     lines.append("|---|---|---|")

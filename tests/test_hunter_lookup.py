@@ -1,10 +1,9 @@
 """Tests for hunter_lookup.py."""
 from __future__ import annotations
+
 import httpx
 import respx
-
 from hunter_lookup import check_credits, lookup_email
-
 
 HUNTER_FIND = "https://api.hunter.io/v2/email-finder"
 HUNTER_ACCOUNT = "https://api.hunter.io/v2/account"
