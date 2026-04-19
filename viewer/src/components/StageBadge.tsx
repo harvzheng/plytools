@@ -7,6 +7,8 @@ const STAGE_CLASS: Record<string, string> = {
   Discovered: "bg-zinc-200 text-zinc-800 hover:bg-zinc-200",
   "JD ingested": "bg-sky-100 text-sky-800 hover:bg-sky-100",
   "Contacts pulled": "bg-sky-100 text-sky-800 hover:bg-sky-100",
+  "Warm-intro requested": "bg-indigo-100 text-indigo-900 hover:bg-indigo-100",
+  Draft: "bg-amber-100 text-amber-900 hover:bg-amber-100",
   "Drafts ready": "bg-amber-100 text-amber-900 hover:bg-amber-100",
   Sent: "bg-emerald-100 text-emerald-900 hover:bg-emerald-100",
   Replied: "bg-emerald-200 text-emerald-900 hover:bg-emerald-200",
