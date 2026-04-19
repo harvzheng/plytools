@@ -112,6 +112,22 @@ describe("POST /api/open", () => {
       .set("content-type", "application/json");
     expect(res.status).toBe(204);
   });
+
+  it("accepts a relative path and joins it to memoryDir", async () => {
+    const res = await request(baseUrl)
+      .post("/api/open")
+      .send({ path: "applications/example-co/status.md", dryRun: true })
+      .set("content-type", "application/json");
+    expect(res.status).toBe(204);
+  });
+
+  it("rejects a relative path that escapes via ..", async () => {
+    const res = await request(baseUrl)
+      .post("/api/open")
+      .send({ path: "../../etc/passwd", dryRun: true })
+      .set("content-type", "application/json");
+    expect(res.status).toBe(403);
+  });
 });
 
 describe("error handling", () => {

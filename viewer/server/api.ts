@@ -130,14 +130,18 @@ export function createApi(opts: ApiOptions): Api {
     if (!body.path || typeof body.path !== "string") {
       return json(res, 400, { error: "path required" });
     }
-    if (!isInside(memoryDir, body.path)) {
+    // Resolve: if absolute, keep as-is; if relative, join to memoryDir.
+    const target = body.path.startsWith("/")
+      ? body.path
+      : join(memoryDir, body.path);
+    if (!isInside(memoryDir, target)) {
       return json(res, 403, { error: "path outside memory dir" });
     }
     if (body.dryRun) {
       res.statusCode = 204;
       return res.end();
     }
-    launchEditor(body.path);
+    launchEditor(target);
     res.statusCode = 204;
     res.end();
   }

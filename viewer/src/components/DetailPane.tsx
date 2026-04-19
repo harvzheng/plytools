@@ -8,6 +8,7 @@ import { Button } from "./ui/button";
 import { Separator } from "./ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { FolderOpen } from "lucide-react";
+import { DraftCard } from "./DraftCard";
 
 function OpenFolderButton({ slug: _slug }: { slug: string }) {
   return (
@@ -124,9 +125,15 @@ export function DetailPane({ slug, company }: { slug: string | null; company: st
             <Markdown source={app.contacts.markdown} />
           </TabsContent>
           <TabsContent value="drafts">
-            <div className="text-sm text-muted-foreground">
-              Drafts list comes in Task 11.
-            </div>
+            {app.drafts.length === 0 ? (
+              <div className="text-sm text-muted-foreground">No drafts yet.</div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {app.drafts.map((d) => (
+                  <DraftCard key={d.name} slug={app.slug} draft={d} />
+                ))}
+              </div>
+            )}
           </TabsContent>
         </div>
       </Tabs>
