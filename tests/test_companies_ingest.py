@@ -37,3 +37,47 @@ def test_ingest_csv_includes_description():
     companies = ingest_csv(FIXTURES / "soho_valley_sample.csv")
     by_name = {c["name"]: c for c in companies}
     assert "AI" in by_name["Niva"]["description"]
+
+
+import httpx
+import respx
+
+from companies_ingest import extract_article_candidates
+
+
+@respx.mock
+def test_extract_article_candidates_finds_links_and_strongs():
+    html = (FIXTURES / "lux_article.html").read_text()
+    respx.get("https://example.com/lux").mock(return_value=httpx.Response(200, text=html))
+    candidates = extract_article_candidates("https://example.com/lux")
+    names = [c["name"] for c in candidates]
+    # Should find all the strong/link-based companies
+    assert "Runway" in names
+    assert "Hugging Face" in names
+    assert "Anthropic" in names
+    assert "Niva" in names
+    assert "Heron Data" in names
+
+
+@respx.mock
+def test_extract_article_candidates_includes_context_snippet():
+    html = (FIXTURES / "lux_article.html").read_text()
+    respx.get("https://example.com/lux").mock(return_value=httpx.Response(200, text=html))
+    candidates = extract_article_candidates("https://example.com/lux")
+    by_name = {c["name"]: c for c in candidates}
+    # Each candidate carries a surrounding snippet for LLM disambiguation
+    assert "snippet" in by_name["Runway"]
+    assert len(by_name["Runway"]["snippet"]) > 0
+
+
+@respx.mock
+def test_extract_article_candidates_dedupes_by_name():
+    html = """
+    <html><body>
+      <p><strong>Alpha</strong> and <a href="#">Alpha</a> are great.</p>
+    </body></html>
+    """
+    respx.get("https://example.com/dup").mock(return_value=httpx.Response(200, text=html))
+    candidates = extract_article_candidates("https://example.com/dup")
+    names = [c["name"] for c in candidates]
+    assert names.count("Alpha") == 1
