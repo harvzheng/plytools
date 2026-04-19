@@ -1,6 +1,6 @@
 import { IncomingMessage, ServerResponse } from "node:http";
 import { readFile, readdir, stat } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { join, resolve, isAbsolute } from "node:path";
 import { spawn } from "node:child_process";
 import { parseIndex, parseStatus, parseJd, parseDraft } from "../src/lib/parsers";
 import { isInside } from "./safePath";
@@ -131,7 +131,7 @@ export function createApi(opts: ApiOptions): Api {
       return json(res, 400, { error: "path required" });
     }
     // Resolve: if absolute, keep as-is; if relative, join to memoryDir.
-    const target = body.path.startsWith("/")
+    const target = isAbsolute(body.path)
       ? body.path
       : join(memoryDir, body.path);
     if (!isInside(memoryDir, target)) {

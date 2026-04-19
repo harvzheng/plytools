@@ -31,18 +31,19 @@ export function DraftCard({
   const chips = chipsFromFrontmatter(draft.frontmatter);
 
   async function copy() {
-    await navigator.clipboard.writeText(draft.body);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    try {
+      await navigator.clipboard.writeText(draft.body);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch (e) {
+      console.error(e);
+    }
   }
 
   async function openInEditor() {
-    // The server resolves the absolute path from slug+name to avoid the client
-    // having to know memoryDir.
+    // Path is relative to memoryDir; the server joins + realpath-validates.
     const path = `applications/${slug}/drafts/${draft.name}`;
     try {
-      // The POST body expects an absolute path, but we don't know memoryDir.
-      // Hand the server a sentinel and let it join; see api.ts change below.
       await api.open(path);
     } catch (e) {
       console.error(e);
