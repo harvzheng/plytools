@@ -52,12 +52,14 @@ import respx
 
 @respx.mock
 def test_resolve_probes_greenhouse_and_hits(tmp_path: pathlib.Path):
-    respx.head("https://boards.greenhouse.io/niva").mock(return_value=httpx.Response(200))
+    # Probe hits the JSON API; cache stores the human-facing marketing URL.
+    respx.get("https://boards-api.greenhouse.io/v1/boards/niva/jobs").mock(
+        return_value=httpx.Response(200, json={"jobs": []})
+    )
     result = resolve("Niva", cache_path=tmp_path / "cache.csv")
     assert result["careers_url"] == "https://boards.greenhouse.io/niva"
     assert result["ats"] == "greenhouse"
     assert result["source"] == "probe"
-    # And the cache row should now be written
     rows = read_cache(tmp_path / "cache.csv")
     assert len(rows) == 1
     assert rows[0].careers_url == "https://boards.greenhouse.io/niva"
@@ -65,24 +67,33 @@ def test_resolve_probes_greenhouse_and_hits(tmp_path: pathlib.Path):
 
 @respx.mock
 def test_resolve_falls_through_to_ashby(tmp_path: pathlib.Path):
-    respx.head("https://boards.greenhouse.io/daloopa").mock(return_value=httpx.Response(404))
-    respx.head("https://job-boards.greenhouse.io/daloopa").mock(return_value=httpx.Response(404))
-    respx.head("https://jobs.lever.co/daloopa").mock(return_value=httpx.Response(404))
-    respx.head("https://jobs.ashbyhq.com/daloopa").mock(return_value=httpx.Response(200))
+    respx.get("https://boards-api.greenhouse.io/v1/boards/daloopa/jobs").mock(
+        return_value=httpx.Response(404)
+    )
+    respx.get("https://api.lever.co/v0/postings/daloopa").mock(
+        return_value=httpx.Response(404)
+    )
+    respx.get("https://api.ashbyhq.com/posting-api/job-board/daloopa").mock(
+        return_value=httpx.Response(200, json={"jobs": []})
+    )
     result = resolve("Daloopa", cache_path=tmp_path / "cache.csv")
     assert result["careers_url"] == "https://jobs.ashbyhq.com/daloopa"
     assert result["ats"] == "ashby"
 
 
 @respx.mock
-def test_resolve_all_miss_returns_needs_google(tmp_path: pathlib.Path):
-    for _, tpl in [
-        ("greenhouse", "https://boards.greenhouse.io/{slug}"),
-        ("greenhouse", "https://job-boards.greenhouse.io/{slug}"),
-        ("lever", "https://jobs.lever.co/{slug}"),
-        ("ashby", "https://jobs.ashbyhq.com/{slug}"),
-    ]:
-        respx.head(tpl.format(slug="obscure")).mock(return_value=httpx.Response(404))
+def test_resolve_rejects_ashby_soft_404(tmp_path: pathlib.Path):
+    # Regression: the old code probed jobs.ashbyhq.com/<slug> which returns 200 for
+    # any slug (soft-404). The new code probes the API which correctly returns 404.
+    respx.get("https://boards-api.greenhouse.io/v1/boards/obscure/jobs").mock(
+        return_value=httpx.Response(404)
+    )
+    respx.get("https://api.lever.co/v0/postings/obscure").mock(
+        return_value=httpx.Response(404)
+    )
+    respx.get("https://api.ashbyhq.com/posting-api/job-board/obscure").mock(
+        return_value=httpx.Response(404)
+    )
     result = resolve("Obscure", cache_path=tmp_path / "cache.csv")
     assert result["careers_url"] is None
     assert result["source"] == "needs_google_or_manual"
