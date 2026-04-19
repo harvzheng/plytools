@@ -93,7 +93,7 @@ Ask: "Which rows do you want to advance to Stage 1? (row numbers, comma-separate
 For each approved row: follow `.claude/skills/job-apply/SKILL.md` Stage 1 in-place (not as a subprocess):
 1. `uv run scripts/fetch_jd.py <role_url>` → JD body.
 2. Write `<user-data>/applications/<company>/jd.md` and stub `status.md`.
-3. Append to `<user-data>/applications/index.md` via `uv run scripts/pipeline.py append` with stage `Discovered`.
+3. Upsert to `<user-data>/applications/index.md` via `uv run scripts/pipeline.py upsert` with stage `Discovered`.
 
 After each approved row: `uv run scripts/shortlist.py set-status <shortlist> <row-index> approved`.
 For any rejected rows: `... set-status <row-index> dismissed`.

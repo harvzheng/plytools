@@ -135,7 +135,7 @@ For each selected target:
 
 1. Determine stage string from what was actually done this session (e.g.,
    "Drafts ready", "Warm-intro requested", "Emailed Head of Design").
-2. Run: `uv run scripts/pipeline.py append <user-data>/applications/index.md <company> <role> <stage> "<last_action>" "<next_step>" <today>`
+2. Run: `uv run scripts/pipeline.py upsert <user-data>/applications/index.md <company> <role> <stage> "<last_action>" "<next_step>" <today>`
 3. Print the current pipeline table.
 
 ## Credit-budget enforcement (critical)
@@ -162,6 +162,10 @@ manual output if neither is set.
 - Network/timeout: offer to retry once; otherwise skip to next cascade step.
 - File-write failure on auto-memory paths: surface the exact path and error;
   don't fabricate success.
+
+## Maintenance
+
+If the viewer or the index shows orphan folders without rows (e.g. legacy company folders that predate the current end-to-end flow), run `uv run scripts/pipeline.py reconcile <user-data>/applications/index.md <user-data>/applications/` to scan every subdirectory with a `status.md` and upsert a row for each. The command is idempotent — running it multiple times produces the same table, so it is safe to re-run after any manual edits to `status.md` files.
 
 ## Never
 
