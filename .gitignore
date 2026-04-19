@@ -35,3 +35,8 @@ build/
 .idea/
 .vscode/
 *.swp
+
+# Viewer subproject
+viewer/node_modules/
+viewer/dist/
+viewer/.vite/
