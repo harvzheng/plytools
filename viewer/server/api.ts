@@ -55,7 +55,7 @@ async function listDrafts(dir: string) {
     if (!name.endsWith(".md")) continue;
     try {
       const raw = await readFile(join(dir, name), "utf8");
-      drafts.push({ name, ...parseDraft(raw) });
+      drafts.push({ name, path: join(dir, name), ...parseDraft(raw) });
     } catch (err) {
       console.warn(`skipping draft ${name}:`, err);
     }
@@ -92,8 +92,34 @@ export function createApi(opts: ApiOptions): Api {
   const watcher = opts.watcher;
 
   async function getIndex(res: ServerResponse) {
-    const raw = await readIfExists(join(memoryDir, "applications/index.md"));
-    json(res, 200, raw ? parseIndex(raw) : []);
+    const indexPath = join(memoryDir, "applications/index.md");
+    const raw = await readIfExists(indexPath);
+    const indexRows = raw ? parseIndex(raw) : [];
+
+    const appsDir = join(memoryDir, "applications");
+    let folders: string[] = [];
+    try {
+      folders = (await readdir(appsDir, { withFileTypes: true }))
+        .filter((d) => d.isDirectory() && !d.name.startsWith("_") && !d.name.startsWith("."))
+        .map((d) => d.name);
+    } catch {
+      // no applications dir; nothing to surface
+    }
+
+    const indexedSlugs = new Set(indexRows.map((r) => r.slug));
+    const orphans = folders
+      .filter((name) => !indexedSlugs.has(name))
+      .map((name) => ({
+        slug: name,
+        company: name,
+        role: "(orphan folder)",
+        stage: "Folder only",
+        lastAction: "—",
+        nextStep: "Add to index.md",
+        updated: "",
+      }));
+
+    json(res, 200, [...indexRows, ...orphans]);
   }
 
   async function getApplication(res: ServerResponse, slug: string) {
@@ -113,6 +139,7 @@ export function createApi(opts: ApiOptions): Api {
     ]);
     json(res, 200, {
       slug,
+      dir,
       status: statusMd ? parseStatus(statusMd) : { fields: {}, markdown: "" },
       jd: jdMd ? parseJd(jdMd) : { fields: {}, markdown: "" },
       contacts: { markdown: contactsMd ?? "" },

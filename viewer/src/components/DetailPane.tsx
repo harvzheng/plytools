@@ -4,26 +4,14 @@ import remarkGfm from "remark-gfm";
 import type { Application } from "../lib/types";
 import { api } from "../lib/api";
 import { StageBadge } from "./StageBadge";
-import { Button } from "./ui/button";
 import { Separator } from "./ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { FolderOpen } from "lucide-react";
 import { DraftCard } from "./DraftCard";
+import { PathButton } from "./PathButton";
 
-function OpenFolderButton({ slug }: { slug: string }) {
-  async function openFolder() {
-    try {
-      await api.open(`applications/${slug}`);
-    } catch (e) {
-      console.error(e);
-    }
-  }
-  return (
-    <Button variant="outline" size="sm" onClick={openFolder}>
-      <FolderOpen className="mr-1 h-3 w-3" />
-      Open folder
-    </Button>
-  );
+function OpenFolderButton({ dir }: { dir: string }) {
+  return <PathButton label="Folder" icon={<FolderOpen className="h-3 w-3" />} path={dir} />;
 }
 
 function FieldGrid({ fields }: { fields: Record<string, string> }) {
@@ -85,7 +73,7 @@ export function DetailPane({
             <StageBadge stage={stage} />
           </div>
         </div>
-        <OpenFolderButton slug={app.slug} />
+        <OpenFolderButton dir={app.dir} />
       </div>
       <Tabs defaultValue="overview" className="flex flex-1 flex-col overflow-hidden">
         <TabsList className="m-4 self-start">
@@ -116,7 +104,7 @@ export function DetailPane({
             ) : (
               <div className="flex flex-col gap-3">
                 {app.drafts.map((d) => (
-                  <DraftCard key={d.name} slug={app.slug} draft={d} />
+                  <DraftCard key={d.name} draft={d} />
                 ))}
               </div>
             )}

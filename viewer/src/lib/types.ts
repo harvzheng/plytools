@@ -15,12 +15,14 @@ export interface KeyedMarkdown {
 
 export interface ParsedDraft {
   name: string;
+  path: string;
   frontmatter: Record<string, unknown>;
   body: string;
 }
 
 export interface Application {
   slug: string;
+  dir: string;
   status: KeyedMarkdown;
   jd: KeyedMarkdown;
   contacts: { markdown: string };

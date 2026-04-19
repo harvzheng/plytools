@@ -60,6 +60,12 @@ export function IndexTable({
     [rows]
   );
 
+  const slugCounts = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const r of rows) m.set(r.slug, (m.get(r.slug) ?? 0) + 1);
+    return m;
+  }, [rows]);
+
   const columns = useMemo<ColumnDef<IndexRow>[]>(() => [
     {
       id: "company",
@@ -247,11 +253,12 @@ export function IndexTable({
               table.getRowModel().rows.map((row) => {
                 const slug = row.original.slug;
                 const isSelected = slug === selectedSlug;
+                const isDup = (slugCounts.get(slug) ?? 0) > 1;
                 return (
                   <TableRow
                     key={row.id}
                     data-state={isSelected ? "selected" : undefined}
-                    className="cursor-pointer"
+                    className={`cursor-pointer ${isDup ? "border-l-2 border-l-amber-400" : ""}`}
                     onClick={() => onSelect(slug)}
                   >
                     {row.getVisibleCells().map((cell) => (

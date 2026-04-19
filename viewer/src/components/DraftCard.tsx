@@ -6,7 +6,7 @@ import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Separator } from "./ui/separator";
 import { ChevronDown, ChevronRight, Copy, Check, Pencil } from "lucide-react";
-import { api } from "../lib/api";
+import { PathButton } from "./PathButton";
 
 function chipsFromFrontmatter(fm: Record<string, unknown>) {
   const chips: Array<{ key: string; label: string }> = [];
@@ -20,10 +20,8 @@ function chipsFromFrontmatter(fm: Record<string, unknown>) {
 }
 
 export function DraftCard({
-  slug,
   draft,
 }: {
-  slug: string;
   draft: ParsedDraft;
 }) {
   const [open, setOpen] = useState(true);
@@ -35,16 +33,6 @@ export function DraftCard({
       await navigator.clipboard.writeText(draft.body);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
-  async function openInEditor() {
-    // Path is relative to memoryDir; the server joins + realpath-validates.
-    const path = `applications/${slug}/drafts/${draft.name}`;
-    try {
-      await api.open(path);
     } catch (e) {
       console.error(e);
     }
@@ -69,9 +57,7 @@ export function DraftCard({
           {copied ? <Check className="mr-1 h-3 w-3" /> : <Copy className="mr-1 h-3 w-3" />}
           {copied ? "Copied" : "Copy draft"}
         </Button>
-        <Button variant="outline" size="sm" onClick={openInEditor}>
-          <Pencil className="mr-1 h-3 w-3" /> Open in editor
-        </Button>
+        <PathButton label="Editor" icon={<Pencil className="h-3 w-3" />} path={draft.path} />
       </div>
       {open && (
         <>

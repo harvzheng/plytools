@@ -60,8 +60,22 @@ describe("GET /api/index", () => {
   it("returns parsed index rows", async () => {
     const res = await request(baseUrl).get("/api/index");
     expect(res.status).toBe(200);
-    expect(res.body).toHaveLength(1);
     expect(res.body[0].company).toBe("Example Co");
+  });
+
+  it("surfaces orphan application folders that are missing from index.md", async () => {
+    // Seed adds an extra folder that's not in the index
+    const orphanDir = join(root, "applications/orphan-co");
+    await import("node:fs/promises").then((fs) =>
+      fs.mkdir(orphanDir, { recursive: true })
+    );
+    const res = await request(baseUrl).get("/api/index");
+    expect(res.status).toBe(200);
+    const slugs = res.body.map((r: any) => r.slug);
+    expect(slugs).toContain("example-co");  // from index.md
+    expect(slugs).toContain("orphan-co");   // from folder only
+    const orphan = res.body.find((r: any) => r.slug === "orphan-co");
+    expect(orphan.stage).toBe("Folder only");
   });
 });
 
@@ -70,11 +84,13 @@ describe("GET /api/application/:slug", () => {
     const res = await request(baseUrl).get("/api/application/example-co");
     expect(res.status).toBe(200);
     expect(res.body.slug).toBe("example-co");
+    expect(res.body.dir).toContain("/applications/example-co");
     expect(res.body.status.fields.Stage).toBe("Drafts ready");
     expect(res.body.jd.fields.URL).toBe("https://example.com");
     expect(res.body.contacts.markdown).toContain("notes");
     expect(res.body.drafts).toHaveLength(1);
     expect(res.body.drafts[0].frontmatter.persona).toBe("hiring-manager");
+    expect(res.body.drafts[0].path).toContain("drafts/alex.md");
   });
 
   it("404s unknown slug", async () => {

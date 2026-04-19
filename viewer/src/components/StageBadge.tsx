@@ -13,6 +13,7 @@ const STAGE_CLASS: Record<string, string> = {
   Sent: "bg-emerald-100 text-emerald-900 hover:bg-emerald-100",
   Replied: "bg-emerald-200 text-emerald-900 hover:bg-emerald-200",
   Passed: "bg-rose-100 text-rose-900 hover:bg-rose-100",
+  "Folder only": "bg-rose-100 text-rose-900 hover:bg-rose-100",
 };
 
 export function StageBadge({ stage, className }: { stage: string; className?: string }) {
