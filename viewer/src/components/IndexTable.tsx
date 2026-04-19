@@ -102,37 +102,17 @@ export function IndexTable({
       id: "lastAction",
       accessorKey: "lastAction",
       header: "Last action",
-      cell: ({ getValue }) => {
-        const v = String(getValue());
-        return (
-          <TooltipProvider delayDuration={200}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="text-muted-foreground">{truncate(v, 50)}</span>
-              </TooltipTrigger>
-              <TooltipContent className="max-w-md">{v}</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        );
-      },
+      cell: ({ getValue }) => (
+        <span className="text-muted-foreground">{truncate(String(getValue()), 50)}</span>
+      ),
     },
     {
       id: "nextStep",
       accessorKey: "nextStep",
       header: "Next",
-      cell: ({ getValue }) => {
-        const v = String(getValue());
-        return (
-          <TooltipProvider delayDuration={200}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="text-muted-foreground">{truncate(v, 50)}</span>
-              </TooltipTrigger>
-              <TooltipContent className="max-w-md">{v}</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        );
-      },
+      cell: ({ getValue }) => (
+        <span className="text-muted-foreground">{truncate(String(getValue()), 50)}</span>
+      ),
     },
     {
       id: "updated",
