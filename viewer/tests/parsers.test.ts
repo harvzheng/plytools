@@ -16,6 +16,7 @@ describe("parseIndex", () => {
     const rows = parseIndex(read("index.md"));
     expect(rows).toHaveLength(2);
     expect(rows[0]).toEqual({
+      slug: "example-co",
       company: "Example Co",
       role: "Product Designer",
       stage: "Drafts ready",
@@ -23,6 +24,21 @@ describe("parseIndex", () => {
       nextStep: "Send V1",
       updated: "2026-04-19",
     });
+  });
+
+  it("derives canonical slugs for company names", () => {
+    const md =
+      "| Company | Role | Stage | Last action | Next | Updated |\n" +
+      "|---|---|---|---|---|---|\n" +
+      "| W&B | Designer | Sent | - | - | 2026-04-19 |\n" +
+      "| Weights & Biases | Engineer | Sent | - | - | 2026-04-19 |\n" +
+      "| Soho Valley | PM | Sent | - | - | 2026-04-19 |\n";
+    const rows = parseIndex(md);
+    expect(rows.map((r) => r.slug)).toEqual([
+      "wandb",
+      "weights-and-biases",
+      "soho-valley",
+    ]);
   });
 
   it("returns empty array when file has no table", () => {

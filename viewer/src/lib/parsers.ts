@@ -1,6 +1,7 @@
 import matter from "gray-matter";
 
 export interface IndexRow {
+  slug: string;
   company: string;
   role: string;
   stage: string;
@@ -29,6 +30,17 @@ const INDEX_HEADERS = [
   "Next",
   "Updated",
 ];
+
+// Canonical slug for a company name. Matches the folder naming convention
+// under applications/<slug>/. Keep this server-side so the client never
+// invents slugs the filesystem doesn't know about.
+export function slugify(company: string): string {
+  return company
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
 
 // Requires a contiguous header + separator + data-row sequence. A blank line
 // or non-pipe line between header and separator resets state and drops any
@@ -67,6 +79,7 @@ export function parseIndex(md: string): IndexRow[] {
     if (!seenHeader || !seenSeparator) continue;
     if (cells.length !== INDEX_HEADERS.length) continue;
     rows.push({
+      slug: slugify(cells[0]),
       company: cells[0],
       role: cells[1],
       stage: cells[2],

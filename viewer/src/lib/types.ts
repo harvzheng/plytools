@@ -1,4 +1,5 @@
 export interface IndexRow {
+  slug: string;
   company: string;
   role: string;
   stage: string;

@@ -39,14 +39,6 @@ function relativeTime(isoDate: string): string {
   return `${Math.floor(diffDays / 365)}y ago`;
 }
 
-function slugify(company: string) {
-  return company
-    .toLowerCase()
-    .replace(/&/g, "and")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
-
 export function IndexTable({
   rows,
   selectedSlug,
@@ -253,7 +245,7 @@ export function IndexTable({
               </TableRow>
             ) : (
               table.getRowModel().rows.map((row) => {
-                const slug = slugify(row.original.company);
+                const slug = row.original.slug;
                 const isSelected = slug === selectedSlug;
                 return (
                   <TableRow
