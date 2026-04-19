@@ -20,6 +20,7 @@ import sys
 from dataclasses import dataclass, fields
 
 HEADERS = ["Company", "Role", "Stage", "Last action", "Next", "Updated"]
+SHORTLIST_HEADERS = ["Company", "Role", "Location", "URL", "Reason", "Status"]
 
 
 @dataclass
@@ -47,6 +48,15 @@ def render_index(rows: list[Row]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def slugify(text: str) -> str:
+    """Convert a company name to a lowercase folder-safe slug."""
+    text = text.lower().strip()
+    text = re.sub(r"[^\w\s-]", "", text)
+    text = re.sub(r"[\s_]+", "-", text)
+    text = re.sub(r"-+", "-", text).strip("-")
+    return text
+
+
 def read_index(path: pathlib.Path) -> list[Row]:
     if not path.exists():
         return []
@@ -63,6 +73,107 @@ def read_index(path: pathlib.Path) -> list[Row]:
             continue
         rows.append(Row(*cells))
     return rows
+
+
+@dataclass
+class ShortlistRow:
+    company: str
+    role: str
+    location: str
+    url: str
+    reason: str
+    status: str
+
+
+def read_shortlist(path: pathlib.Path) -> list[ShortlistRow]:
+    if not path.exists():
+        return []
+    rows: list[ShortlistRow] = []
+    seen_header = False
+    seen_sep = False
+    for line in path.read_text().splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("|"):
+            seen_header = False
+            seen_sep = False
+            continue
+        cells = [c.strip() for c in stripped.strip("|").split("|")]
+        if len(cells) != len(SHORTLIST_HEADERS):
+            continue
+        if cells == SHORTLIST_HEADERS:
+            seen_header = True
+            continue
+        if all(set(c) <= {"-", ":", " "} for c in cells):
+            if seen_header:
+                seen_sep = True
+            continue
+        if not (seen_header and seen_sep):
+            continue
+        rows.append(ShortlistRow(*cells))
+    return rows
+
+
+def _jd_stub(company: str, roles: list[ShortlistRow]) -> str:
+    lines = [f"# {company} — shortlisted roles", ""]
+    lines.append(f"_Stub created by `pipeline.py import-shortlist`. Full JDs not yet fetched. Run job-apply Stage 1 on a specific role to fetch its full description._")
+    lines.append("")
+    lines.append("| Role | Location | URL |")
+    lines.append("|---|---|---|")
+    for r in roles:
+        lines.append(f"| {r.role} | {r.location} | {r.url} |")
+    return "\n".join(lines) + "\n"
+
+
+def import_shortlist(
+    index: pathlib.Path,
+    shortlist: pathlib.Path,
+    apps_dir: pathlib.Path,
+) -> dict:
+    """Promote non-dismissed shortlist rows to the index + create per-company
+    stub folders. Returns a summary dict for logging."""
+    today = datetime.date.today().isoformat()
+    rows = [r for r in read_shortlist(shortlist) if r.status != "dismissed"]
+
+    # Group rows by company slug so we can write one stub jd.md per company.
+    by_company: dict[str, list[ShortlistRow]] = {}
+    for r in rows:
+        by_company.setdefault(r.company, []).append(r)
+
+    imported_rows = 0
+    created_folders = 0
+    preserved_folders = 0
+
+    for company, company_rows in by_company.items():
+        slug = slugify(company)
+        folder = apps_dir / slug
+        folder.mkdir(parents=True, exist_ok=True)
+        jd_path = folder / "jd.md"
+        if jd_path.exists():
+            preserved_folders += 1
+        else:
+            jd_path.write_text(_jd_stub(company, company_rows))
+            created_folders += 1
+
+        for r in company_rows:
+            upsert_row(
+                index,
+                Row(
+                    company=r.company,
+                    role=r.role,
+                    stage="Discovered",
+                    last_action="Shortlisted",
+                    next_step="Ingest JD + contacts",
+                    updated=today,
+                ),
+            )
+            imported_rows += 1
+
+    return {
+        "imported_rows": imported_rows,
+        "created_stubs": created_folders,
+        "preserved_existing_jds": preserved_folders,
+        "dismissed_skipped": sum(1 for r in read_shortlist(shortlist) if r.status == "dismissed"),
+    }
 
 
 def append_row(path: pathlib.Path, row: Row) -> None:
@@ -196,6 +307,11 @@ def main(argv: list[str]) -> int:
     p_reconcile.add_argument("path", type=pathlib.Path)
     p_reconcile.add_argument("apps_dir", type=pathlib.Path)
 
+    p_import = sub.add_parser("import-shortlist")
+    p_import.add_argument("index", type=pathlib.Path)
+    p_import.add_argument("shortlist", type=pathlib.Path)
+    p_import.add_argument("apps_dir", type=pathlib.Path)
+
     args = parser.parse_args(argv)
     if args.cmd == "append":
         row = Row(**{f.name: getattr(args, f.name) for f in fields(Row)})
@@ -213,6 +329,15 @@ def main(argv: list[str]) -> int:
     if args.cmd == "reconcile":
         reconcile(args.path, args.apps_dir)
         print(render_index(read_index(args.path)), end="")
+        return 0
+    if args.cmd == "import-shortlist":
+        summary = import_shortlist(args.index, args.shortlist, args.apps_dir)
+        print(render_index(read_index(args.index)), end="")
+        print()  # blank line
+        print(f"imported: {summary['imported_rows']} rows")
+        print(f"stubs created: {summary['created_stubs']}")
+        print(f"existing jds preserved: {summary['preserved_existing_jds']}")
+        print(f"dismissed rows skipped: {summary['dismissed_skipped']}")
         return 0
     return 1
 

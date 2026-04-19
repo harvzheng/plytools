@@ -3,7 +3,7 @@ from __future__ import annotations
 import pathlib
 import pytest
 
-from pipeline import Row, append_row, read_index, render_index, upsert_row, reconcile
+from pipeline import Row, append_row, read_index, render_index, upsert_row, reconcile, read_shortlist, import_shortlist
 
 
 def test_read_index_missing_file_returns_empty(tmp_path: pathlib.Path):
@@ -147,3 +147,84 @@ def test_reconcile_role_strips_parenthetical_qualifiers(tmp_path: pathlib.Path):
     reconcile(index, apps)
     rows = read_index(index)
     assert rows[0].role == "Product Designer"
+
+
+def test_read_shortlist_parses_non_dismissed_rows(tmp_path: pathlib.Path):
+    path = tmp_path / "shortlist.md"
+    path.write_text(
+        "| Company | Role | Location | URL | Reason | Status |\n"
+        "|---|---|---|---|---|---|\n"
+        "| Ramp | Design Engineer | NYC | https://example.com/r1 | ⭐ | pending |\n"
+        "| Ramp | Product Designer | NYC | https://example.com/r2 | ⭐ | approved |\n"
+        "| Foo | PM | Remote | https://example.com/f | - | dismissed |\n"
+    )
+    rows = read_shortlist(path)
+    assert len(rows) == 3
+    assert rows[0].company == "Ramp"
+    assert rows[1].role == "Product Designer"
+    assert rows[2].status == "dismissed"
+
+
+def test_import_shortlist_upserts_rows_and_creates_stubs(tmp_path: pathlib.Path):
+    apps = tmp_path / "applications"
+    apps.mkdir()
+    shortlist = apps / "_shortlist.md"
+    shortlist.write_text(
+        "| Company | Role | Location | URL | Reason | Status |\n"
+        "|---|---|---|---|---|---|\n"
+        "| Ramp | Design Engineer | NYC | https://example.com/r1 | ⭐ | pending |\n"
+        "| Ramp | Product Designer | NYC | https://example.com/r2 | ⭐ | approved |\n"
+        "| Endex | Founding Designer | NYC | https://example.com/e | ⭐ | approved |\n"
+        "| Foo | PM | Remote | https://example.com/f | - | dismissed |\n"
+    )
+    index = apps / "index.md"
+    summary = import_shortlist(index, shortlist, apps)
+    rows = read_index(index)
+    assert len(rows) == 3  # two Ramp roles + one Endex; dismissed skipped
+    stages = {r.stage for r in rows}
+    assert stages == {"Discovered"}
+    assert (apps / "ramp" / "jd.md").exists()
+    assert (apps / "endex" / "jd.md").exists()
+    assert not (apps / "foo").exists()
+    assert summary["imported_rows"] == 3
+    assert summary["created_stubs"] == 2
+    assert summary["dismissed_skipped"] == 1
+
+
+def test_import_shortlist_preserves_existing_real_jd(tmp_path: pathlib.Path):
+    apps = tmp_path / "applications"
+    (apps / "openrouter").mkdir(parents=True)
+    real_jd = apps / "openrouter" / "jd.md"
+    real_jd.write_text("# OpenRouter — Product Designer\n\nFull fetched body.\n")
+
+    shortlist = apps / "_shortlist.md"
+    shortlist.write_text(
+        "| Company | Role | Location | URL | Reason | Status |\n"
+        "|---|---|---|---|---|---|\n"
+        "| OpenRouter | Product Designer | Remote | https://example.com/or | ⭐ | approved |\n"
+    )
+    index = apps / "index.md"
+    summary = import_shortlist(index, shortlist, apps)
+    # existing JD body must be untouched
+    assert "Full fetched body." in real_jd.read_text()
+    assert summary["preserved_existing_jds"] == 1
+    assert summary["created_stubs"] == 0
+
+
+def test_import_shortlist_stub_lists_all_roles_at_same_company(tmp_path: pathlib.Path):
+    apps = tmp_path / "applications"
+    apps.mkdir()
+    shortlist = apps / "_shortlist.md"
+    shortlist.write_text(
+        "| Company | Role | Location | URL | Reason | Status |\n"
+        "|---|---|---|---|---|---|\n"
+        "| Ramp | Design Engineer | NYC | https://example.com/r1 | ⭐ | pending |\n"
+        "| Ramp | Product Designer | NYC | https://example.com/r2 | ⭐ | pending |\n"
+        "| Ramp | Frontend Eng | NYC | https://example.com/r3 | ⭐ | pending |\n"
+    )
+    import_shortlist(apps / "index.md", shortlist, apps)
+    stub = (apps / "ramp" / "jd.md").read_text()
+    assert "Design Engineer" in stub
+    assert "Product Designer" in stub
+    assert "Frontend Eng" in stub
+    assert "https://example.com/r1" in stub
