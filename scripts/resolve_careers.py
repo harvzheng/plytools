@@ -24,11 +24,18 @@ from dataclasses import dataclass, asdict
 
 import httpx
 
+# Probe the JSON API endpoints (not the marketing pages). The marketing pages
+# do soft-404s: Ashby's jobs.ashbyhq.com/<anything> returns 200, and
+# boards.greenhouse.io/<anything> returns a 301 to a generic board-not-found
+# page. The API endpoints return a real 404 for bad slugs.
+# careers_url in the cache is the human-facing URL that fetch_jobs.py understands.
 ATS_PROBES = [
-    ("greenhouse", "https://boards.greenhouse.io/{slug}"),
-    ("greenhouse", "https://job-boards.greenhouse.io/{slug}"),
-    ("lever", "https://jobs.lever.co/{slug}"),
-    ("ashby", "https://jobs.ashbyhq.com/{slug}"),
+    ("greenhouse", "https://boards-api.greenhouse.io/v1/boards/{slug}/jobs?content=false",
+     "https://boards.greenhouse.io/{slug}"),
+    ("lever", "https://api.lever.co/v0/postings/{slug}?mode=json",
+     "https://jobs.lever.co/{slug}"),
+    ("ashby", "https://api.ashbyhq.com/posting-api/job-board/{slug}?includeCompensation=false",
+     "https://jobs.ashbyhq.com/{slug}"),
 ]
 
 CACHE_HEADERS = ["company", "slug", "careers_url", "ats", "source", "resolved_at"]
@@ -106,22 +113,23 @@ def resolve(
 
     owns_client = client is None
     if owns_client:
-        client = httpx.Client(timeout=10.0, follow_redirects=True)
+        client = httpx.Client(timeout=10.0, follow_redirects=False)
     try:
-        for ats, tpl in ATS_PROBES:
-            url = tpl.format(slug=slug)
+        for ats, probe_tpl, public_tpl in ATS_PROBES:
+            probe_url = probe_tpl.format(slug=slug)
             try:
-                r = client.head(url)
+                r = client.get(probe_url)
             except httpx.HTTPError:
                 continue
             if 200 <= r.status_code < 300:
+                public_url = public_tpl.format(slug=slug)
                 if cache_path is not None:
                     write_cache_row(cache_path, CacheRow(
-                        company=company, slug=slug, careers_url=url,
+                        company=company, slug=slug, careers_url=public_url,
                         ats=ats, source="probe", resolved_at=today,
                     ))
                 return {
-                    "company": company, "slug": slug, "careers_url": url,
+                    "company": company, "slug": slug, "careers_url": public_url,
                     "ats": ats, "source": "probe", "resolved_at": today,
                 }
     finally:
