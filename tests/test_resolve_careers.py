@@ -88,3 +88,29 @@ def test_resolve_all_miss_returns_needs_google(tmp_path: pathlib.Path):
     assert result["source"] == "needs_google_or_manual"
     # Cache NOT written yet on miss (skill does the follow-up)
     assert read_cache(tmp_path / "cache.csv") == []
+
+
+def test_record_flag_writes_cache_row(tmp_path: pathlib.Path):
+    # Simulates the skill calling --record after a successful WebSearch resolution.
+    from resolve_careers import main
+    cache = tmp_path / "cache.csv"
+    rc = main([
+        "--cache", str(cache), "--record",
+        "Obscure Co", "https://obscure.co/careers", "generic", "google",
+    ])
+    assert rc == 0
+    rows = read_cache(cache)
+    assert len(rows) == 1
+    assert rows[0].company == "Obscure Co"
+    assert rows[0].careers_url == "https://obscure.co/careers"
+    assert rows[0].source == "google"
+
+
+def test_record_persists_across_cache_reads(tmp_path: pathlib.Path):
+    from resolve_careers import main
+    cache = tmp_path / "cache.csv"
+    main(["--cache", str(cache), "--record", "X Co", "https://x.co/jobs", "generic", "manual"])
+    # A second resolve() call should return the cached row without hitting probes.
+    result = resolve("X Co", cache_path=cache)
+    assert result["careers_url"] == "https://x.co/jobs"
+    assert result["source"] == "manual"
