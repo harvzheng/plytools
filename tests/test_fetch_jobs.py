@@ -45,3 +45,27 @@ def test_fetch_greenhouse_snippet_is_truncated():
     jobs = fetch_greenhouse("https://boards.greenhouse.io/airbnb")
     for j in jobs:
         assert len(j["snippet"]) <= 400
+
+
+@respx.mock
+def test_fetch_lever_parses_postings():
+    payload = json.loads((FIXTURES / "lever_board.json").read_text())
+    respx.get("https://api.lever.co/v0/postings/plaid").mock(
+        return_value=httpx.Response(200, json=payload)
+    )
+    jobs = fetch_lever("https://jobs.lever.co/plaid")
+    assert len(jobs) > 0
+    for j in jobs:
+        assert set(j.keys()) >= {"title", "location", "url", "snippet"}
+        assert j["title"]
+
+
+@respx.mock
+def test_fetch_lever_snippet_is_truncated():
+    payload = json.loads((FIXTURES / "lever_board.json").read_text())
+    respx.get("https://api.lever.co/v0/postings/plaid").mock(
+        return_value=httpx.Response(200, json=payload)
+    )
+    jobs = fetch_lever("https://jobs.lever.co/plaid")
+    for j in jobs:
+        assert len(j["snippet"]) <= 400

@@ -62,7 +62,30 @@ def fetch_greenhouse(careers_url: str, *, client: httpx.Client | None = None) ->
 
 
 def fetch_lever(careers_url: str, *, client: httpx.Client | None = None) -> list[dict]:
-    raise NotImplementedError  # Task 12
+    slug = _slug_from_careers_url(careers_url)
+    api = f"https://api.lever.co/v0/postings/{slug}"
+    owns_client = client is None
+    if owns_client:
+        client = httpx.Client(timeout=20.0, follow_redirects=True)
+    try:
+        r = client.get(api, params={"mode": "json"})
+        r.raise_for_status()
+        data = r.json()
+    finally:
+        if owns_client:
+            client.close()
+    out: list[dict] = []
+    # Lever returns a flat list of postings.
+    for p in data:
+        categories = p.get("categories") or {}
+        description_text = _strip_html(p.get("descriptionPlain") or p.get("description") or "")
+        out.append({
+            "title": p.get("text") or "",
+            "location": categories.get("location") or "",
+            "url": p.get("hostedUrl") or "",
+            "snippet": _trim(description_text),
+        })
+    return out
 
 
 def fetch_ashby(careers_url: str, *, client: httpx.Client | None = None) -> list[dict]:
