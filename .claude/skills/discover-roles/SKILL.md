@@ -100,6 +100,16 @@ For any rejected rows: `... set-status <row-index> dismissed`.
 
 Do NOT proceed to job-apply Stages 2–5. The user will re-invoke the job-apply skill when ready to do contact discovery and drafts.
 
+### Bulk alternative — `import-shortlist`
+
+When the shortlist is large and the user wants every non-dismissed row visible in the pipeline (and the viewer) without running Stage 1 per row, use `import-shortlist` instead:
+
+```
+uv run scripts/pipeline.py import-shortlist <user-data>/applications/index.md <shortlist.md> <user-data>/applications/
+```
+
+This additively upserts every `pending`/`approved` row at stage `Discovered` and writes a stub `jd.md` per company that lists the scanned roles with URLs. It never downgrades an existing in-progress application. Full JDs are not fetched — the user can run job-apply Stage 1 on any specific row later to replace the stub with a real `jd.md`.
+
 ## WebSearch budget (critical)
 
 Maintain an in-conversation counter `websearch_used_this_run` starting at 0. Increment by 1 per WebSearch call in Stage C. Hard cap: 25 per run. When hit: stop doing lookups, mark remaining companies unresolved (cached), continue to Stage D.
