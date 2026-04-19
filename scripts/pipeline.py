@@ -73,14 +73,13 @@ def append_row(path: pathlib.Path, row: Row) -> None:
 
 
 def upsert_row(path: pathlib.Path, row: Row) -> None:
-    """Insert row, or replace the existing row that matches (company, role)."""
+    """Ensure exactly one row matches (company, role); remove any pre-existing
+    duplicates and write the new row."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    rows = read_index(path)
-    for i, existing in enumerate(rows):
-        if existing.company == row.company and existing.role == row.role:
-            rows[i] = row
-            path.write_text(render_index(rows))
-            return
+    rows = [
+        r for r in read_index(path)
+        if not (r.company == row.company and r.role == row.role)
+    ]
     rows.append(row)
     path.write_text(render_index(rows))
 

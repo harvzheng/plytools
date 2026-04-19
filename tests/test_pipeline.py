@@ -117,3 +117,19 @@ def test_reconcile_is_idempotent(tmp_path: pathlib.Path):
     reconcile(index, apps)
     second = read_index(index)
     assert first == second
+
+
+def test_upsert_dedupes_existing_duplicate_rows(tmp_path: pathlib.Path):
+    path = tmp_path / "index.md"
+    # Seed two rows with the same (company, role) — the broken state we want
+    # upsert to clean up.
+    append_row(path, Row("OpenRouter", "Product Designer", "Discovered",
+                         "JD ingested", "Pull contacts", "2026-04-19"))
+    append_row(path, Row("OpenRouter", "Product Designer", "Drafts ready",
+                         "V2 picked", "Send V2", "2026-04-19"))
+    assert len(read_index(path)) == 2
+    upsert_row(path, Row("OpenRouter", "Product Designer", "Sent",
+                         "Sent V2", "Wait for reply", "2026-04-20"))
+    rows = read_index(path)
+    assert len(rows) == 1
+    assert rows[0].stage == "Sent"
