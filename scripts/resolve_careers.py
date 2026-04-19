@@ -91,6 +91,8 @@ def resolve(
     client: httpx.Client | None = None,
 ) -> dict:
     slug = slug_for(company)
+    today = datetime.date.today().isoformat()
+
     if cache_path is not None:
         for row in read_cache(cache_path):
             if row.slug == slug:
@@ -102,14 +104,34 @@ def resolve(
                     "source": row.source,
                     "resolved_at": row.resolved_at,
                 }
-    # Probe path implemented in Task 8.
+
+    owns_client = client is None
+    if owns_client:
+        client = httpx.Client(timeout=10.0, follow_redirects=True)
+    try:
+        for ats, tpl in ATS_PROBES:
+            url = tpl.format(slug=slug)
+            try:
+                r = client.head(url)
+            except httpx.HTTPError:
+                continue
+            if 200 <= r.status_code < 300:
+                if cache_path is not None:
+                    write_cache_row(cache_path, CacheRow(
+                        company=company, slug=slug, careers_url=url,
+                        ats=ats, source="probe", resolved_at=today,
+                    ))
+                return {
+                    "company": company, "slug": slug, "careers_url": url,
+                    "ats": ats, "source": "probe", "resolved_at": today,
+                }
+    finally:
+        if owns_client:
+            client.close()
+
     return {
-        "company": company,
-        "slug": slug,
-        "careers_url": None,
-        "ats": None,
-        "source": "needs_google_or_manual",
-        "resolved_at": datetime.date.today().isoformat(),
+        "company": company, "slug": slug, "careers_url": None,
+        "ats": None, "source": "needs_google_or_manual", "resolved_at": today,
     }
 
 
