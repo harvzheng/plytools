@@ -100,6 +100,8 @@ def _parse_status_md(text: str, folder_name: str) -> Row:
             h1_right = (m.group(2) or "").strip()
             if h1_right:
                 company = h1_left
+                # Strip parenthetical from company before further splitting
+                company = re.split(r"\s*\(", company, maxsplit=1)[0].strip()
                 role = h1_right
             else:
                 company = h1_left
@@ -126,8 +128,12 @@ def _parse_status_md(text: str, folder_name: str) -> Row:
             next_step = val
 
     if role_override:
-        # Truncate at first " — " or comma
-        role = re.split(r"\s*[—\-]\s*|,\s*", role_override, maxsplit=1)[0].strip()
+        # Strip parenthetical first (avoids splitting inside parens), then take
+        # the first comma-separated chunk, then trim em-dash suffixes.
+        role = re.split(r"\s*\(", role_override, maxsplit=1)[0]
+        role = role.split(",", 1)[0]
+        role = re.split(r"\s+[—\-]\s+", role, maxsplit=1)[0]
+        role = role.strip()
 
     # Fix up company: if it looks like "Stainless, Product Designer" (comma-separated pair from
     # H1 like "# Status — Stainless, Product Designer"), strip everything after the first comma.

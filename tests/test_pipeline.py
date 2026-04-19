@@ -133,3 +133,17 @@ def test_upsert_dedupes_existing_duplicate_rows(tmp_path: pathlib.Path):
     rows = read_index(path)
     assert len(rows) == 1
     assert rows[0].stage == "Sent"
+
+
+def test_reconcile_role_strips_parenthetical_qualifiers(tmp_path: pathlib.Path):
+    apps = tmp_path / "applications"
+    (apps / "stainless").mkdir(parents=True)
+    (apps / "stainless" / "status.md").write_text(
+        "# Status — Stainless, Product Designer\n\n"
+        "- **Stage:** Contacts tiered\n"
+        "- **Role:** Product Designer (first dedicated, product + brand)\n"
+    )
+    index = apps / "index.md"
+    reconcile(index, apps)
+    rows = read_index(index)
+    assert rows[0].role == "Product Designer"
