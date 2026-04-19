@@ -1,12 +1,12 @@
 """Tests for fetch_jd.py — JD HTML parsing + fetch."""
 from __future__ import annotations
+
 import pathlib
 
 import httpx
 import pytest
 import respx
-
-from fetch_jd import parse_jd, fetch_jd
+from fetch_jd import fetch_jd, parse_jd
 
 FIXTURES = pathlib.Path(__file__).parent / "fixtures"
 

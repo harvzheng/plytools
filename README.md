@@ -71,6 +71,18 @@ approve. Approved rows drop into the job-apply pipeline at stage "Discovered".
 
 See `.claude/skills/discover-roles/SKILL.md` for the full stage flow.
 
+## Local viewer UI
+
+A read-only browser UI for the pipeline lives in `viewer/`. It shows an
+Airtable-style table of the index plus a per-application detail pane
+(JD, contacts, drafts), hot-reloading as the memory dir changes.
+
+```bash
+cd viewer && npm install && npm run dev
+```
+
+See `viewer/README.md` for details.
+
 ## Running scripts directly
 
 Each script in `scripts/` is a standalone `uv` script:

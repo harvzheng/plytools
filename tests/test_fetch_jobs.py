@@ -1,12 +1,12 @@
 """Tests for fetch_jobs.py — per-ATS role fetchers."""
 from __future__ import annotations
+
 import json
 import pathlib
 
 import httpx
 import respx
-
-from fetch_jobs import fetch_greenhouse, fetch_lever, fetch_ashby, fetch_generic
+from fetch_jobs import fetch_ashby, fetch_generic, fetch_greenhouse, fetch_lever
 
 FIXTURES = pathlib.Path(__file__).parent / "fixtures"
 

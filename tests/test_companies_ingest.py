@@ -1,5 +1,6 @@
 """Tests for companies_ingest.py — CSV and article ingestion."""
 from __future__ import annotations
+
 import pathlib
 
 from companies_ingest import ingest_csv
@@ -41,7 +42,6 @@ def test_ingest_csv_includes_description():
 
 import httpx
 import respx
-
 from companies_ingest import extract_article_candidates
 
 

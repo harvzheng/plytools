@@ -16,7 +16,7 @@ import argparse
 import json
 import re
 import sys
-from urllib.parse import urlparse, urljoin
+from urllib.parse import urljoin, urlparse
 
 import httpx
 from bs4 import BeautifulSoup

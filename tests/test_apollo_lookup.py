@@ -1,10 +1,9 @@
 """Tests for apollo_lookup.py."""
 from __future__ import annotations
+
 import httpx
 import respx
-
 from apollo_lookup import check_credits, lookup_email
-
 
 APOLLO_MATCH_URL = "https://api.apollo.io/api/v1/people/match"
 APOLLO_HEALTH_URL = "https://api.apollo.io/api/v1/auth/health"

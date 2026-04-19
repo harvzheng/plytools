@@ -1,5 +1,6 @@
 """Tests for shortlist.py — per-run role shortlist read/append/status."""
 from __future__ import annotations
+
 import pathlib
 
 from shortlist import Row, append_row, read_shortlist, render_shortlist, set_status
