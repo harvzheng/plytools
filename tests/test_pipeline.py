@@ -209,6 +209,33 @@ def test_import_shortlist_preserves_existing_real_jd(tmp_path: pathlib.Path):
     assert "Full fetched body." in real_jd.read_text()
     assert summary["preserved_existing_jds"] == 1
     assert summary["created_stubs"] == 0
+    assert summary["skipped_already_indexed"] == 0
+
+
+def test_import_shortlist_never_downgrades_existing_rows(tmp_path: pathlib.Path):
+    apps = tmp_path / "applications"
+    apps.mkdir()
+    index = apps / "index.md"
+    # Seed an existing row at a later stage.
+    append_row(index, Row("OpenRouter", "Product Designer", "Drafts ready",
+                          "V2 picked", "Send V2", "2026-04-19"))
+    shortlist = apps / "_shortlist.md"
+    shortlist.write_text(
+        "| Company | Role | Location | URL | Reason | Status |\n"
+        "|---|---|---|---|---|---|\n"
+        "| OpenRouter | Product Designer | Remote | https://example.com | ⭐ | approved |\n"
+        "| NewCo | Designer | NYC | https://example.com/new | ⭐ | pending |\n"
+    )
+    summary = import_shortlist(index, shortlist, apps)
+    rows = read_index(index)
+    # OpenRouter row preserved, NewCo row added.
+    openrouter = next(r for r in rows if r.company == "OpenRouter")
+    assert openrouter.stage == "Drafts ready"
+    assert openrouter.last_action == "V2 picked"
+    newco = next(r for r in rows if r.company == "NewCo")
+    assert newco.stage == "Discovered"
+    assert summary["imported_rows"] == 1
+    assert summary["skipped_already_indexed"] == 1
 
 
 def test_import_shortlist_stub_lists_all_roles_at_same_company(tmp_path: pathlib.Path):

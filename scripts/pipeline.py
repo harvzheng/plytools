@@ -129,17 +129,23 @@ def import_shortlist(
     shortlist: pathlib.Path,
     apps_dir: pathlib.Path,
 ) -> dict:
-    """Promote non-dismissed shortlist rows to the index + create per-company
-    stub folders. Returns a summary dict for logging."""
-    today = datetime.date.today().isoformat()
-    rows = [r for r in read_shortlist(shortlist) if r.status != "dismissed"]
+    """Promote shortlist rows to the index + create per-company stub folders.
 
-    # Group rows by company slug so we can write one stub jd.md per company.
+    Never touches an existing (company, role) row — this is additive only.
+    Skips rows whose status is "dismissed"."""
+    today = datetime.date.today().isoformat()
+    all_rows = read_shortlist(shortlist)
+    rows = [r for r in all_rows if r.status != "dismissed"]
+
+    # Existing (company, role) pairs — skip these so we don't downgrade progress.
+    existing = {(r.company, r.role) for r in read_index(index)}
+
     by_company: dict[str, list[ShortlistRow]] = {}
     for r in rows:
         by_company.setdefault(r.company, []).append(r)
 
     imported_rows = 0
+    skipped_already_indexed = 0
     created_folders = 0
     preserved_folders = 0
 
@@ -155,6 +161,9 @@ def import_shortlist(
             created_folders += 1
 
         for r in company_rows:
+            if (r.company, r.role) in existing:
+                skipped_already_indexed += 1
+                continue
             upsert_row(
                 index,
                 Row(
@@ -170,9 +179,10 @@ def import_shortlist(
 
     return {
         "imported_rows": imported_rows,
+        "skipped_already_indexed": skipped_already_indexed,
         "created_stubs": created_folders,
         "preserved_existing_jds": preserved_folders,
-        "dismissed_skipped": sum(1 for r in read_shortlist(shortlist) if r.status == "dismissed"),
+        "dismissed_skipped": sum(1 for r in all_rows if r.status == "dismissed"),
     }
 
 
@@ -333,8 +343,9 @@ def main(argv: list[str]) -> int:
     if args.cmd == "import-shortlist":
         summary = import_shortlist(args.index, args.shortlist, args.apps_dir)
         print(render_index(read_index(args.index)), end="")
-        print()  # blank line
+        print()
         print(f"imported: {summary['imported_rows']} rows")
+        print(f"skipped (already indexed): {summary['skipped_already_indexed']}")
         print(f"stubs created: {summary['created_stubs']}")
         print(f"existing jds preserved: {summary['preserved_existing_jds']}")
         print(f"dismissed rows skipped: {summary['dismissed_skipped']}")
