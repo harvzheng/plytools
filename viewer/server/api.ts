@@ -1,6 +1,6 @@
 import { IncomingMessage, ServerResponse } from "node:http";
 import { readFile, readdir, stat } from "node:fs/promises";
-import { join, resolve, basename } from "node:path";
+import { join, resolve } from "node:path";
 import { spawn } from "node:child_process";
 import { parseIndex, parseStatus, parseJd, parseDraft } from "../src/lib/parsers";
 import { isInside } from "./safePath";
@@ -44,19 +44,23 @@ async function readIfExists(path: string): Promise<string | null> {
 }
 
 async function listDrafts(dir: string) {
+  let entries: string[];
   try {
-    const entries = await readdir(dir);
-    const drafts = [];
-    for (const name of entries) {
-      if (!name.endsWith(".md")) continue;
-      const raw = await readFile(join(dir, name), "utf8");
-      const parsed = parseDraft(raw);
-      drafts.push({ name, ...parsed });
-    }
-    return drafts.sort((a, b) => a.name.localeCompare(b.name));
+    entries = await readdir(dir);
   } catch {
     return [];
   }
+  const drafts = [];
+  for (const name of entries) {
+    if (!name.endsWith(".md")) continue;
+    try {
+      const raw = await readFile(join(dir, name), "utf8");
+      drafts.push({ name, ...parseDraft(raw) });
+    } catch (err) {
+      console.warn(`skipping draft ${name}:`, err);
+    }
+  }
+  return drafts.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 // Editor fallback chain, per spec:
@@ -158,14 +162,29 @@ export function createApi(opts: ApiOptions): Api {
   function handler(req: IncomingMessage, res: ServerResponse) {
     const url = new URL(req.url || "/", "http://localhost");
     const p = url.pathname;
+
+    const run = (promise: Promise<unknown>) =>
+      promise.catch((err) => {
+        console.error("api error", err);
+        if (!res.headersSent) json(res, 500, { error: "internal error" });
+        else res.end();
+      });
+
     try {
-      if (req.method === "GET" && p === "/api/index") return void getIndex(res);
+      if (req.method === "GET" && p === "/api/index") {
+        return void run(getIndex(res));
+      }
       if (req.method === "GET" && p.startsWith("/api/application/")) {
-        const slug = decodeURIComponent(p.slice("/api/application/".length));
-        return void getApplication(res, slug);
+        let slug: string;
+        try {
+          slug = decodeURIComponent(p.slice("/api/application/".length));
+        } catch {
+          return json(res, 400, { error: "bad slug" });
+        }
+        return void run(getApplication(res, slug));
       }
       if (req.method === "POST" && p === "/api/open") {
-        return void postOpen(req, res);
+        return void run(postOpen(req, res));
       }
       if (req.method === "GET" && p === "/api/events") {
         return serveEvents(req, res);

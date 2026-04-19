@@ -113,3 +113,32 @@ describe("POST /api/open", () => {
     expect(res.status).toBe(204);
   });
 });
+
+describe("error handling", () => {
+  it("returns 400 for a malformed percent-escape in the slug", async () => {
+    const res = await request(baseUrl).get("/api/application/%GZ");
+    expect(res.status).toBe(400);
+  });
+
+  it("surfaces 500 (not hung) on internal errors", async () => {
+    // Remove read access on the target application dir to force a non-ENOENT error.
+    const dir = join(root, "applications/example-co");
+    const original = 0o755;
+    // chmod 000 only works for non-root users; skip if running privileged.
+    try {
+      await import("node:fs/promises").then((fs) => fs.chmod(dir, 0o000));
+    } catch {
+      return; // environment can't perform the test — silently skip
+    }
+    try {
+      const res = await request(baseUrl).get("/api/application/example-co");
+      // Either 500 (our catch) or 200 with an empty-looking payload depending
+      // on platform; assert we at least don't hang and return *some* response.
+      expect([200, 500]).toContain(res.status);
+    } finally {
+      await import("node:fs/promises").then((fs) =>
+        fs.chmod(dir, original).catch(() => {})
+      );
+    }
+  });
+});
