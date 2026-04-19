@@ -7,6 +7,8 @@
 data/
 applications/
 memory/
+!viewer/tests/fixtures/memory/
+!viewer/tests/fixtures/memory/**
 profile.md
 positioning.md
 contacts.md

@@ -30,6 +30,10 @@ const INDEX_HEADERS = [
   "Updated",
 ];
 
+// Requires a contiguous header + separator + data-row sequence. A blank line
+// or non-pipe line between header and separator resets state and drops any
+// subsequent rows — this is how we reject tables whose headers don't match
+// INDEX_HEADERS (e.g. a contacts table that happens to have 6 columns).
 export function parseIndex(md: string): IndexRow[] {
   const rows: IndexRow[] = [];
   // Track state: only accept data rows after seeing the correct header + separator
@@ -74,7 +78,9 @@ export function parseIndex(md: string): IndexRow[] {
   return rows;
 }
 
-const KEY_VALUE_LINE = /^\s*-\s*\*\*([^:*]+):\*\*\s*(.+)$/;
+// matches "- **Key:** value" bullets. The key capture excludes `:` and `*`
+// to avoid eating the closing `**` when a line has no colon.
+const KEY_VALUE_LINE = /^\s*-\s*\*\*([^:*]+):\*\*\s*(.*)$/;
 
 function extractKeyedFields(md: string): Record<string, string> {
   const fields: Record<string, string> = {};

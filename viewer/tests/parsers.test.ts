@@ -33,6 +33,23 @@ describe("parseIndex", () => {
     const md = `| Company | Role |\n|---|---|\n| only one cell\n| A | B | C | D | E | F |\n`;
     expect(parseIndex(md)).toEqual([]);
   });
+
+  it("ignores a second pipe-table with different headers in the same document", () => {
+    const md = [
+      "| Company | Role | Stage | Last action | Next | Updated |",
+      "|---|---|---|---|---|---|",
+      "| Real | Designer | Sent | sent | - | 2026-04-19 |",
+      "",
+      "## Unrelated table",
+      "",
+      "| Name | Title |",
+      "|---|---|",
+      "| Alex | HM |",
+    ].join("\n");
+    const rows = parseIndex(md);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].company).toBe("Real");
+  });
 });
 
 describe("parseStatus", () => {
@@ -50,6 +67,13 @@ describe("parseStatus", () => {
     const parsed = parseStatus("just some prose, no bullets");
     expect(parsed.fields).toEqual({});
     expect(parsed.markdown).toBe("just some prose, no bullets");
+  });
+
+  it("preserves keys with empty values", () => {
+    const md = "- **Stage:** Discovered\n- **Compensation:**\n";
+    const parsed = parseStatus(md);
+    expect(parsed.fields.Stage).toBe("Discovered");
+    expect(parsed.fields.Compensation).toBe("");
   });
 });
 
