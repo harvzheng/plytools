@@ -49,7 +49,13 @@ function Markdown({ source }: { source: string }) {
   );
 }
 
-export function DetailPane({ slug, company }: { slug: string | null; company?: string | null }) {
+export function DetailPane({
+  slug,
+  company,
+}: {
+  slug: string | null;
+  company: string | null;
+}) {
   const { data, isLoading, error } = useQuery({
     queryKey: ["application", slug],
     queryFn: () => api.getApplication(slug!),
