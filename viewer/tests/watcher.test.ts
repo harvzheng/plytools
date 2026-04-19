@@ -50,20 +50,14 @@ describe("createWatcher", () => {
     expect(events[0].path).toContain("applications/foo/status.md");
   });
 
-  it("debounces rapid successive writes to the same file", async () => {
-    const watcher = createWatcher(root, { debounceMs: 100 });
+  it("still emits events for paths containing 'git' or 'node' substrings", async () => {
+    mkdirSync(join(root, "applications/gitlab-co"), { recursive: true });
+    const watcher = createWatcher(root);
     stopFn = watcher.stop;
     await watcher.ready;
-    const target = join(root, "applications/foo/status.md");
-    writeFileSync(target, "one");
-    // Write the file multiple times within the debounce window.
-    const writes = [1, 2, 3, 4].map(() => {
-      writeFileSync(target, String(Math.random()));
-    });
-    void writes;
-    // Wait long enough for debounce to flush.
-    await new Promise((r) => setTimeout(r, 400));
-    // Wrap up by stopping — test passes if no unhandled errors.
-    expect(true).toBe(true);
+    const pending = collect(watcher, 1);
+    writeFileSync(join(root, "applications/gitlab-co/status.md"), "hi");
+    const events = await pending;
+    expect(events[0].path).toContain("gitlab-co/status.md");
   });
 });

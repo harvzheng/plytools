@@ -26,7 +26,7 @@ export function createWatcher(
 
   const fs: FSWatcher = chokidar.watch(root, {
     ignoreInitial: true,
-    ignored: (p) => /node_modules|\.git/.test(p),
+    ignored: (p) => /(^|[\\/])(node_modules|\.git)([\\/]|$)/.test(p),
     awaitWriteFinish: {
       stabilityThreshold: 50,
       pollInterval: 20,
@@ -42,7 +42,10 @@ export function createWatcher(
       pending.clear();
       flushTimer = null;
       for (const ev of batch) {
-        for (const l of listeners) l(ev);
+        // Snapshot listeners so that unsubscribe/subscribe during dispatch
+        // doesn't change who receives this event.
+        const snapshot = Array.from(listeners);
+        for (const l of snapshot) l(ev);
       }
     }, debounceMs);
   };
@@ -61,7 +64,10 @@ export function createWatcher(
       return () => listeners.delete(listener);
     },
     async stop() {
-      if (flushTimer) clearTimeout(flushTimer);
+      if (flushTimer) {
+        clearTimeout(flushTimer);
+        flushTimer = null;
+      }
       listeners.clear();
       await fs.close();
     },
