@@ -9,6 +9,9 @@ applications/
 memory/
 !viewer/tests/fixtures/memory/
 !viewer/tests/fixtures/memory/**
+!tests/fixtures/migrate/memory/
+!tests/fixtures/migrate/memory/**
+!tests/fixtures/migrate/memory/**/contacts.md
 profile.md
 positioning.md
 contacts.md

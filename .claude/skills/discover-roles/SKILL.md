@@ -34,7 +34,7 @@ Report: "Ingested N companies (X CSV + Y article candidates, deduped)."
 
 ### Stage B — Dedup
 
-1. Read the existing pipeline: `uv run scripts/pipeline.py list <user-data>/applications/index.md`. Collect existing company names.
+1. Read the existing pipeline: `uv run scripts/db.py list`. Collect existing company names.
 2. Read `<user-data>/feedback_off_limits_companies.md` — parse company names (the memory file has a simple bulleted list).
 3. Drop companies matching case-insensitively on name. Report how many dropped by each reason.
 
@@ -92,8 +92,8 @@ Ask: "Which rows do you want to advance to Stage 1? (row numbers, comma-separate
 
 For each approved row: follow `.claude/skills/job-apply/SKILL.md` Stage 1 in-place (not as a subprocess):
 1. `uv run scripts/fetch_jd.py <role_url>` → JD body.
-2. Write `<user-data>/applications/<company>/jd.md` and stub `status.md`.
-3. Upsert to `<user-data>/applications/index.md` via `uv run scripts/pipeline.py upsert` with stage `Discovered`.
+2. Write `<user-data>/applications/<company-slug>/<role-slug>/jd.md`.
+3. Upsert to the DB via `uv run scripts/db.py upsert` with stage `Discovered`.
 
 After each approved row: `uv run scripts/shortlist.py set-status <shortlist> <row-index> approved`.
 For any rejected rows: `... set-status <row-index> dismissed`.
@@ -105,7 +105,7 @@ Do NOT proceed to job-apply Stages 2–5. The user will re-invoke the job-apply 
 When the shortlist is large and the user wants every non-dismissed row visible in the pipeline (and the viewer) without running Stage 1 per row, use `import-shortlist` instead:
 
 ```
-uv run scripts/pipeline.py import-shortlist <user-data>/applications/index.md <shortlist.md> <user-data>/applications/
+uv run scripts/db.py import-shortlist <shortlist.md> <user-data>/applications/
 ```
 
 This additively upserts every `pending`/`approved` row at stage `Discovered` and writes a stub `jd.md` per company that lists the scanned roles with URLs. It never downgrades an existing in-progress application. Full JDs are not fetched — the user can run job-apply Stage 1 on any specific row later to replace the stub with a real `jd.md`.

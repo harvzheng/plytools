@@ -9,13 +9,30 @@ import { ConnectionIndicator } from "./components/ConnectionIndicator";
 export function App() {
   const conn = useMemoryEvents();
   const [selected, setSelected] = useState<string | null>(null);
-  const { data, isLoading, error } = useQuery({
+  const [activeView, setActiveView] = useState<string | null>(null);
+
+  const indexQuery = useQuery({
     queryKey: ["index"],
     queryFn: api.getIndex,
   });
 
-  const selectedCompany =
-    data && selected ? data.find((r) => r.slug === selected)?.company ?? null : null;
+  const viewQuery = useQuery({
+    queryKey: ["view", activeView],
+    queryFn: () => api.runView(activeView!),
+    enabled: activeView !== null,
+  });
+
+  const viewsQuery = useQuery({
+    queryKey: ["views"],
+    queryFn: api.listViews,
+  });
+
+  const data = activeView !== null ? viewQuery.data : indexQuery.data;
+  const isLoading = activeView !== null ? viewQuery.isLoading : indexQuery.isLoading;
+  const error = activeView !== null ? viewQuery.error : indexQuery.error;
+
+  const selectedRow =
+    data && selected ? data.find((r) => r.slug === selected) ?? null : null;
 
   return (
     <div className="flex h-screen flex-col">
@@ -34,11 +51,22 @@ export function App() {
           {isLoading && <div>Loading…</div>}
           {error && <div className="text-destructive">Error: {String(error)}</div>}
           {data && (
-            <IndexTable rows={data} selectedSlug={selected} onSelect={setSelected} />
+            <IndexTable
+              rows={data}
+              selectedSlug={selected}
+              onSelect={setSelected}
+              savedViews={viewsQuery.data ?? []}
+              activeView={activeView}
+              onViewChange={setActiveView}
+            />
           )}
         </div>
         <div className="flex-1 overflow-hidden">
-          <DetailPane slug={selected} company={selectedCompany} />
+          <DetailPane
+            slug={selected}
+            company={selectedRow?.company ?? null}
+            role={selectedRow?.role ?? null}
+          />
         </div>
       </div>
     </div>
