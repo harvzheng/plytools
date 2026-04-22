@@ -1,12 +1,15 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { ParsedDraft } from "../lib/types";
+import { api } from "../lib/api";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Separator } from "./ui/separator";
-import { ChevronDown, ChevronRight, Copy, Check, Pencil } from "lucide-react";
+import { ChevronDown, ChevronRight, Copy, Check, Pencil, Save, X } from "lucide-react";
 import { PathButton } from "./PathButton";
+import { slugFromEventPath } from "../lib/useMemoryEvents";
 
 function chipsFromFrontmatter(fm: Record<string, unknown>) {
   const chips: Array<{ key: string; label: string }> = [];
@@ -24,9 +27,27 @@ export function DraftCard({
 }: {
   draft: ParsedDraft;
 }) {
+  const qc = useQueryClient();
   const [open, setOpen] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState(draft.raw);
   const chips = chipsFromFrontmatter(draft.frontmatter);
+
+  // Reset the edit buffer whenever the underlying file changes on disk (e.g.
+  // an external edit comes in while the card is collapsed but not in edit mode).
+  useEffect(() => {
+    if (!editing) setText(draft.raw);
+  }, [draft.raw, editing]);
+
+  const save = useMutation({
+    mutationFn: (next: string) => api.saveDraft(draft.path, next),
+    onSuccess: () => {
+      setEditing(false);
+      const slug = slugFromEventPath(draft.path);
+      if (slug) void qc.invalidateQueries({ queryKey: ["application", slug] });
+    },
+  });
 
   async function copy() {
     try {
@@ -53,19 +74,70 @@ export function DraftCard({
             ))}
           </div>
         </button>
-        <Button variant="outline" size="sm" onClick={copy}>
-          {copied ? <Check className="mr-1 h-3 w-3" /> : <Copy className="mr-1 h-3 w-3" />}
-          {copied ? "Copied" : "Copy draft"}
-        </Button>
-        <PathButton label="Editor" icon={<Pencil className="h-3 w-3" />} path={draft.path} />
+        {editing ? (
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setText(draft.raw);
+                setEditing(false);
+              }}
+              disabled={save.isPending}
+            >
+              <X className="mr-1 h-3 w-3" /> Cancel
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => save.mutate(text)}
+              disabled={save.isPending || text === draft.raw}
+            >
+              <Save className="mr-1 h-3 w-3" /> {save.isPending ? "Saving…" : "Save"}
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button variant="outline" size="sm" onClick={copy}>
+              {copied ? <Check className="mr-1 h-3 w-3" /> : <Copy className="mr-1 h-3 w-3" />}
+              {copied ? "Copied" : "Copy draft"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setOpen(true);
+                setEditing(true);
+              }}
+            >
+              <Pencil className="mr-1 h-3 w-3" /> Edit
+            </Button>
+            <PathButton label="Editor" icon={<Pencil className="h-3 w-3" />} path={draft.path} />
+          </>
+        )}
       </div>
       {open && (
         <>
           <Separator />
           <div className="p-3">
-            <div className="prose prose-sm max-w-none prose-headings:mt-4 prose-headings:mb-2 prose-p:my-2">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{draft.body}</ReactMarkdown>
-            </div>
+            {editing ? (
+              <>
+                <textarea
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  className="h-80 w-full resize-y rounded-sm border border-input bg-background p-2 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                  spellCheck={false}
+                />
+                {save.error && (
+                  <div className="mt-2 text-xs text-destructive">
+                    {String(save.error)}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="prose prose-sm max-w-none prose-headings:mt-4 prose-headings:mb-2 prose-p:my-2">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{draft.body}</ReactMarkdown>
+              </div>
+            )}
           </div>
         </>
       )}

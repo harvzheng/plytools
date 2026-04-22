@@ -3,12 +3,13 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Application } from "../lib/types";
 import { api } from "../lib/api";
-import { StageBadge } from "./StageBadge";
 import { Separator } from "./ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { FolderOpen } from "lucide-react";
 import { DraftCard } from "./DraftCard";
 import { PathButton } from "./PathButton";
+import { StageEditor } from "./StageEditor";
+import { PriorityInput } from "./PriorityInput";
 
 function OpenFolderButton({ dir }: { dir: string }) {
   return <PathButton label="Folder" icon={<FolderOpen className="h-3 w-3" />} path={dir} />;
@@ -40,9 +41,11 @@ function Markdown({ source }: { source: string }) {
 export function DetailPane({
   slug,
   company,
+  role,
 }: {
   slug: string | null;
   company: string | null;
+  role: string | null;
 }) {
   const { data, isLoading, error } = useQuery({
     queryKey: ["application", slug],
@@ -63,14 +66,22 @@ export function DetailPane({
 
   const app: Application = data;
   const stage = app.status.fields["Stage"] ?? "Unknown";
+  const priorityRaw = app.status.fields["Priority"];
+  const priorityNum = priorityRaw ? parseInt(priorityRaw, 10) : NaN;
+  const priority = Number.isFinite(priorityNum) ? priorityNum : null;
 
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-3 border-b p-4">
         <div className="flex-1">
-          <div className="text-sm text-muted-foreground">{company ?? app.slug}</div>
-          <div className="flex items-center gap-2">
-            <StageBadge stage={stage} />
+          <div className="text-sm text-muted-foreground">{company ?? app.companySlug}</div>
+          <div className="text-base font-medium">{role ?? app.roleSlug}</div>
+          <div className="mt-1 flex items-center gap-3">
+            <StageEditor slug={app.slug} stage={stage} />
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <span>Priority</span>
+              <PriorityInput slug={app.slug} value={priority} />
+            </div>
           </div>
         </div>
         <OpenFolderButton dir={app.dir} />
