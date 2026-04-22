@@ -22,12 +22,11 @@ from __future__ import annotations
 
 import argparse
 import datetime
+import os
 import pathlib
 import re
 import sqlite3
 import sys
-
-import os
 
 
 def default_db_path() -> pathlib.Path:

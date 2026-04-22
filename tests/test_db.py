@@ -4,13 +4,9 @@ from __future__ import annotations
 import pathlib
 import sqlite3
 
-import pytest
-
 from db import (
-    dedupe_role_slugs,
     import_shortlist,
     list_rows,
-    open_db,
     read_shortlist,
     reconcile,
     render_table,
@@ -196,7 +192,8 @@ def test_priority_preserved_when_not_passed(tmp_path):
 
 def test_db_path_override(tmp_path):
     """Data written to a custom DB path is readable from that path only."""
-    import subprocess, sys
+    import subprocess
+    import sys
 
     custom_db_path = tmp_path / "custom.db"
     # Bootstrap the schema in the custom DB

@@ -15,9 +15,9 @@ Usage:
     uv run scripts/migrate_to_sqlite.py --dry-run              # parse, print, no writes
 """
 import argparse
+import os
 import pathlib
 import re
-import os
 import sqlite3
 import sys
 from datetime import datetime, timezone
@@ -617,7 +617,6 @@ def run_migration(
     disk_keys = set(disk_roles)
 
     # Classify
-    matched_keys = set(index_keys.keys()) & disk_keys
     index_only = set(index_keys.keys()) - disk_keys
     folder_only = disk_keys - set(index_keys.keys())
 
@@ -907,8 +906,8 @@ def _write_report(path: pathlib.Path, s: dict) -> None:
         "",
         "## Totals",
         "",
-        f"| Table | Rows |",
-        f"|---|---|",
+        "| Table | Rows |",
+        "|---|---|",
         f"| applications | {s['total_applications']} |",
         f"| jd | {s['total_jd']} |",
         f"| contacts | {s['total_contacts']} |",

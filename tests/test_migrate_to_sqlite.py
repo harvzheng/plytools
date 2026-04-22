@@ -4,8 +4,8 @@ Tests for migrate_to_sqlite.py
 Run with: uv run --with pytest pytest tests/test_migrate_to_sqlite.py -v
 """
 import importlib.util
-import sqlite3
 import pathlib
+import sqlite3
 
 import pytest
 
