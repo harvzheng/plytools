@@ -17,7 +17,7 @@ picking personas, composing drafts — happens in-skill (LLM reasoning).
 |------|-------|-------------|
 | API keys | `<repo>/.env` | yes |
 | Profile / positioning / contacts | `<user-data>/{profile,positioning,contacts}.md` | N/A (not in repo) |
-| Per-company application folders | `<user-data>/applications/<company>/` | N/A |
+| Per-role application folders | `<user-data>/applications/<company>/<role-slug>/` | N/A |
 | Pipeline index | `<user-data>/applications/index.md` | N/A |
 
 ## Stages (auto-detect which to enter)
@@ -59,7 +59,7 @@ Inputs: URL (preferred) or pasted text.
    note domain if visible.
 3. Ask which angle to emphasize. Default from `positioning.md` angles-by-role-type,
    but let the user override per-role.
-4. Write `applications/<company>/jd.md` and a stub `status.md`.
+4. Write `applications/<company>/<role-slug>/jd.md` and a stub `status.md` in the same folder. `<role-slug>` is the viewer/pipeline-compatible slug of the role title (e.g. `Senior Product Designer` → `senior-product-designer`); if another role for this company already uses that slug, append `-2`, `-3`, etc.
 
 ### Stage 2 — Contact filter
 
@@ -74,7 +74,7 @@ Inputs: pasted LinkedIn names + titles (freeform).
    - 📋 **Context** — same-function peers.
    - ❌ **Skip** — unrelated functions.
 3. Print the tiered list with a one-line "why" per person.
-4. Write `applications/<company>/contacts.md`.
+4. Write `applications/<company>/<role-slug>/contacts.md`.
 
 ### Stage 2.5 — Target selection (HITL gate)
 
@@ -109,7 +109,7 @@ providers miss, surface the manual block and do NOT fabricate an address —
 guessing is explicitly out of scope.
 
 After each lookup, increment the session credit counter by 1 and append a row to
-`applications/<company>/contacts.md`:
+`applications/<company>/<role-slug>/contacts.md`:
 
 ```
 | Name | Title | Tier | Email | Source | Confidence |
@@ -127,7 +127,7 @@ For each selected target:
 2. Read `templates/prompt.md` + chosen persona template + `profile.md` +
    `positioning.md` + `jd.md`.
 3. Compose two variants (v1 and v2) per the persona's variant guidance.
-4. Write both to `applications/<company>/drafts/<name>-<persona>-v1.md` and
+4. Write both to `applications/<company>/<role-slug>/drafts/<name>-<persona>-v1.md` and
    `-v2.md`. Print both inline.
 5. Ask the user which variant to use or if they want another revision.
 
@@ -135,7 +135,7 @@ For each selected target:
 
 1. Determine stage string from what was actually done this session (e.g.,
    "Drafts ready", "Warm-intro requested", "Emailed Head of Design").
-2. Run: `uv run scripts/pipeline.py upsert <user-data>/applications/index.md <company> <role> <stage> "<last_action>" "<next_step>" <today>`
+2. Run: `uv run scripts/db.py upsert "<company>" "<role>" "<stage>" "<last_action>" "<next_step>" <today>`
 3. Print the current pipeline table.
 
 ## Credit-budget enforcement (critical)
@@ -165,7 +165,7 @@ manual output if neither is set.
 
 ## Maintenance
 
-If the viewer or the index shows orphan folders without rows (e.g. legacy company folders that predate the current end-to-end flow), run `uv run scripts/pipeline.py reconcile <user-data>/applications/index.md <user-data>/applications/` to scan every subdirectory with a `status.md` and upsert a row for each. The command is idempotent — running it multiple times produces the same table, so it is safe to re-run after any manual edits to `status.md` files.
+If the viewer or the index shows orphan folders without rows (e.g. legacy company folders that predate the current end-to-end flow), run `uv run scripts/db.py reconcile <user-data>/applications/` to scan every company/role subdirectory and insert a placeholder row for any folder not already in the DB. The command is idempotent — running it multiple times produces the same result, so it is safe to re-run at any time.
 
 ## Never
 

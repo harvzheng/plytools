@@ -60,6 +60,7 @@ export function plytoolsViewer(opts: PluginOptions = {}): Plugin {
         const w = currentWatcher;
         currentWatcher = null;
         void w?.stop();
+        api.close();
       });
 
       console.log(`[plytools-viewer] memory dir: ${memoryDir}`);

@@ -3,8 +3,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { MemoryEvent } from "./types";
 
 export function slugFromEventPath(path: string): string | null {
-  const m = path.match(/\/applications\/([^/]+)\//);
-  return m ? m[1] : null;
+  // Matches applications/<company>/<role>/... — the composite slug is
+  // "<company>/<role>" so query-key invalidation targets just the affected
+  // role instead of sweeping every role under a company.
+  const m = path.match(/\/applications\/([^/]+)\/([^/]+)\//);
+  return m ? `${m[1]}/${m[2]}` : null;
 }
 
 export interface ConnectionState {
@@ -31,15 +34,13 @@ export function useMemoryEvents(): ConnectionState {
     es.onmessage = (raw) => {
       try {
         const ev: MemoryEvent = JSON.parse(raw.data);
-        if (ev.path.endsWith("/applications/index.md")) {
-          void qc.invalidateQueries({ queryKey: ["index"] });
-        } else {
-          const slug = slugFromEventPath(ev.path);
-          if (slug) {
-            void qc.invalidateQueries({ queryKey: ["application", slug] });
-            void qc.invalidateQueries({ queryKey: ["index"] });
-          }
-        }
+        const slug = slugFromEventPath(ev.path);
+        void qc.invalidateQueries({
+          predicate: (q) =>
+            q.queryKey[0] === "index" ||
+            q.queryKey[0] === "view" ||
+            (q.queryKey[0] === "application" && q.queryKey[1] === slug),
+        });
       } catch {
         // ignore malformed events
       }

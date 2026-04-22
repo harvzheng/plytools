@@ -91,7 +91,7 @@ Each script in `scripts/` is a standalone `uv` script:
 uv run scripts/fetch_jd.py https://boards.greenhouse.io/example/jobs/1
 uv run scripts/apollo_lookup.py lookup Alex Chen example.com
 uv run scripts/hunter_lookup.py credits
-uv run scripts/pipeline.py list ~/.claude/projects/-Users-harvey-Development-plytools/memory/applications/index.md
+uv run scripts/db.py list
 ```
 
 ## Testing
